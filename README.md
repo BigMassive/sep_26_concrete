@@ -41,6 +41,8 @@ Per [docs/decisions/0001-lab-toolchain.md](docs/decisions/0001-lab-toolchain.md)
 
 - **Docker Compose** for lab/backend services (harness, not product topology).
 - **Godot** (OSS) on the host for the UI project in this repo.
+- **Stock IPFS + stock IOTA** over TCP/IP for now; **DIDs** for naming ([ADR 0002](docs/decisions/0002-ipfs-iota-did.md)). RINA overlay later.
+- **Elixir / BEAM** node runtime ([ADR 0003](docs/decisions/0003-runtime-beam.md)).
 - **Required tools are open source** — no paid licences. Cursor is optional.
 
 Clone-and-go compose + Godot project land once the vertical slice is frozen; until then this is docs-only.

@@ -64,8 +64,9 @@ For every task / storage / state change, three devices:
 ## Data and information
 
 - Both held on **IPFS** (AES-256-GCM, split across DAG blocks as needed).
-- Naming: prefer **DID** (including an identifier for **this CoT’s IOTA**); IINL acceptable interim.
-- If IINL retained: supplement with **C_aud** and **ML-KEM-1024** material under auditor pubkey so auditor can recover **K_DAG**.
+- Naming: prefer **DID** (including an identifier for **this CoT’s IOTA**); **DIDs from the start** in this prototype ([ADR 0002](decisions/0002-ipfs-iota-did.md)) — not IINL-first.
+- Lab stand-ins: **stock IPFS** + **stock IOTA** over **TCP/IP** now; **RINA overlay later** in this same prototype (ADR 0002).
+- If auditor wrap is added later: **C_aud** and **ML-KEM-1024** under auditor pubkey so auditor can recover **K_DAG**.
 - **Data access:** seL4 keystore/vault + **capability** check.
 - **Information access:** keystore recovers **K_DAG** + **head**, checks permission, then provides crypto (user still does not see raw keys in the product story).
 
@@ -83,7 +84,7 @@ For every task / storage / state change, three devices:
 
 Residue from Mar_25 Godot lab + site — keep **structure**, not the falsity harness:
 
-- Endpoints: `{name (IINL|DID), optional CID}` (empty CID ⇒ live head).
+- Endpoints: `{DID, optional CID}` (empty CID ⇒ live head).
 - First-class edge in the commit **links** facet, not an inline hyperlink.
 - Bidirectional bookkeeping when relating A↔B.
 - Same permission / capability story as other information facets.

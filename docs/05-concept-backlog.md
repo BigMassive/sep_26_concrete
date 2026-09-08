@@ -14,11 +14,14 @@ Slice acceptance criteria are **not frozen** yet — treat current **slice** row
 
 | Concept | Status | Notes |
 |---------|--------|-------|
-| Blob / Tree / Commit content model | slice | Residue — core of the slice |
-| Name → head (IINL-like or DID) | slice | Prefer DID (incl. CoT IOTA DID); IINL OK as interim |
+| Blob / Tree / Commit content model | slice | Residue — core of the slice; stock IPFS (ADR 0002) |
+| Name → head (**DID**) | slice | IOTA Identity on stock IOTA from the start (ADR 0002); not IINL-first |
 | One capability check on mutate | slice | Must be real, not OPA-shaped theatre |
 | Thin UI veneer (Godot) | slice | ADR 0001 — editor on host; project in-repo |
 | Docker Compose lab harness | stub or slice | Clone-and-go services only when slice needs them; not product topology |
+| Stock IPFS + stock IOTA (TCP/IP) | slice | Lab stand-ins; not final fabric (ADR 0002) |
+| Elixir / BEAM node runtime | slice | ADR 0003 — TCP/IP under the hood; RINA overlay later |
+| RINA overlay | stub → later slice | After first TCP/IP path; same prototype (ADR 0002) |
 | Serialised mutation of shared authority | stub or slice | If shared AdminCap-like object exists |
 | Keystore / crypto hand-out | paper | Real path in programme map; not until slice needs keys |
 | Network policy engine (OPA-like) | paper | Only if check cannot live closer to the action |
@@ -40,7 +43,7 @@ Slice acceptance criteria are **not frozen** yet — treat current **slice** row
 | Attestation keys → hardware pseudonyms (e.g. per RINA use) | paper | Multiple personas from one EK | RINA, caps |
 | Atomic-class on-node clock | paper | Dependable local time | Sync, trilateration |
 | Fibre + photonics / DWDM underlay | paper | Physical plant for RINA + sync | RINA |
-| RINA (not Ouroboros) on same fibre as clock sync | paper | Networking narrative | Mesh, CoT |
+| RINA (not Ouroboros) on same fibre as clock sync | paper | Networking narrative; lab gets RINA **overlay later** (ADR 0002); TCP/IP first | Mesh, CoT |
 | Tamper mesh / battery / pressure → auto-erase | paper | Physical integrity plane | TPM, EK lifetime |
 
 ## Circles of trust and membership
@@ -106,7 +109,7 @@ Slice acceptance criteria are **not frozen** yet — treat current **slice** row
 | Concept | Status | Intent | Touches |
 |---------|--------|--------|---------|
 | Data and information on IPFS (AES-256-GCM DAG) | paper | Confidential content plane | Content store |
-| DID preferred over IINL; DID for CoT IOTA | paper | Universal naming | Name → head |
+| DID preferred over IINL; DID for CoT IOTA | slice | **ADR 0002** — DIDs from the start | Name → head |
 | C_aud + ML-KEM-1024 → auditor recovers K_DAG | paper | Auditor path into encrypted DAGs | IINL/DID |
 | Data access: vault/keystore + capability | paper | Simpler gate for data | Caps |
 | Information access: K_DAG + head + permission then crypto | paper | Mar_25/26 information path | Keystore |

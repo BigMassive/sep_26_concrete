@@ -17,9 +17,9 @@ Working architecture for `sep_26_concrete`. This is **not** a restatement of the
 ```
 
 - **UI** — thinnest possible control/observation surface; **Godot** (see [ADR 0001](decisions/0001-lab-toolchain.md)).
-- **Node runtime** — hosts orchestration for the vertical slice (language/runtime deferred; BEAM earned keep in Mar_26 for distribution, not mandated yet).
-- **Content store** — content-addressed Blob / Tree / Commit graph (IPFS-like).
-- **Naming + authority** — durable name → head; gated mutation of shared authority objects.
+- **Node runtime** — **Elixir / Erlang (BEAM)** for orchestration ([ADR 0003](decisions/0003-runtime-beam.md)); TCP/IP under the hood now, RINA overlay later.
+- **Content store** — content-addressed Blob / Tree / Commit graph on **stock IPFS** (lab stand-in; [ADR 0002](decisions/0002-ipfs-iota-did.md)).
+- **Naming + authority** — durable **DID** → head (IOTA Identity on **stock IOTA**); gated mutation ([ADR 0002](decisions/0002-ipfs-iota-did.md)).
 
 ## Lab vs product topology
 
@@ -41,17 +41,19 @@ If a lab harness is used, label it explicitly in the slice doc so it is not mist
 
 Record choices under `docs/decisions/` before coding:
 
-- [ ] Runtime language / distribution model
+- [x] Runtime language / distribution model → **Elixir / BEAM** ([ADR 0003](decisions/0003-runtime-beam.md))
 - [x] UI technology → **Godot** ([ADR 0001](decisions/0001-lab-toolchain.md))
 - [x] Lab packaging → **Docker Compose** harness; Godot on host ([ADR 0001](decisions/0001-lab-toolchain.md))
-- [ ] Content store (IPFS vs stand-in)
-- [ ] Naming: IINL-like vs IOTA Identity DID vs other
+- [x] Content store → **stock IPFS** (lab stand-in; [ADR 0002](decisions/0002-ipfs-iota-did.md))
+- [x] Naming → **DID** via IOTA Identity on stock IOTA ([ADR 0002](decisions/0002-ipfs-iota-did.md))
 - [ ] How the first capability is represented and checked
 - [ ] Whether a lab supervisor exists and how it is labelled
+- [ ] RINA overlay packaging (later in this prototype; [ADR 0002](decisions/0002-ipfs-iota-did.md))
+- [ ] Exact BEAM app shape (OTP vs Phoenix, single node vs cluster) when coding starts
 
 ## Programme map vs this prototype
 
-Owner outline for hardware, CoTs, funding, K_DAG, Wendy-links, presence, etc. lives in [07-programme-map.md](07-programme-map.md) with triage in [05-concept-backlog.md](05-concept-backlog.md). Networking narrative on that map is **RINA** (not Ouroboros). Almost all of that map is **paper** until promoted.
+Owner outline for hardware, CoTs, funding, K_DAG, Wendy-links, presence, etc. lives in [07-programme-map.md](07-programme-map.md) with triage in [05-concept-backlog.md](05-concept-backlog.md). Networking narrative on that map is **RINA** (not Ouroboros). Lab path starts on **TCP/IP** with stock IPFS/IOTA; **RINA overlay later in this prototype** ([ADR 0002](decisions/0002-ipfs-iota-did.md)). Almost all of the programme map remains **paper** until promoted.
 
 ## Non-architecture
 

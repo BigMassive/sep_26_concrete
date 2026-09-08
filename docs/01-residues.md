@@ -8,7 +8,7 @@ What remains after discarding the prior lab prototype. Full architect review liv
 |---------|------------------|
 | Content graph: Blob / Tree / Commit | Clear sketch of versioned info, not just blob storage |
 | Separate trees for content / read / write / links / message | Points at capability-aware information |
-| Stable name → content head (IINL-like; DIDs later) | Mutable info with a durable address |
+| Stable name → content head (IINL-like; DIDs later) | Mutable info with a durable address — **sep_26 uses DIDs from the start** (ADR 0002) |
 | Serialised authority for shared mutable objects (AdminCap + queue) | Right instinct for conflicting mutations |
 | Same release, role by node name | Cheap dual packaging for lab harness vs worker |
 | Backend = ground truth; UI = veneer | Documented and mostly held |
@@ -31,7 +31,7 @@ What remains after discarding the prior lab prototype. Full architect review liv
 - Real encryption (`falsity_encryption_key_int` was a placeholder)
 - `previously_started` lifecycle closed loop
 - `iota_ri` Move package wired into Elixir
-- IINL → IOTA Identity DIDs (noted in Mar_26 TODOs)
+- IINL → IOTA Identity DIDs — **decided for sep_26** (ADR 0002); no IINL-first path
 
 ## Pointers into BigMassive/CONCRETE
 

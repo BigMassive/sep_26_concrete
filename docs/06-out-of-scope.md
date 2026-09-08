@@ -13,7 +13,8 @@ Explicit non-goals for `sep_26_concrete` so they are not silently re-imported fr
 Documented as programme paper in [07-programme-map.md](07-programme-map.md) / [05-concept-backlog.md](05-concept-backlog.md) — **not** deliverables of this prototype until promoted:
 
 - seL4 / CHERI / PQC TPM / tamper-erase hardware as the node
-- RINA (or any production networking) and DWDM / photonics plant
+- **RINA in the first lab path** (stock IPFS/IOTA use **TCP/IP** initially; RINA is planned as an **overlay later in this prototype** — [ADR 0002](decisions/0002-ipfs-iota-did.md))
+- DWDM / photonics plant as a deliverable of this repo
 - National or production clock-sync / trilateration / sensor presence stack
 - Category-theoretic presence engine (manifolds, cohomology nullifiers, Heyting checkers)
 - Real FIPS 202 / HKDF / ML-DSA / ML-KEM / AES-GCM / TSS / MPC validator key ceremonies
@@ -23,6 +24,8 @@ Documented as programme paper in [07-programme-map.md](07-programme-map.md) / [0
 - Full Boss-Based Access Control, guards, revocation graphs, complete pseudonym systems
 - Matrix as communications fabric
 - Formal UK TOP SECRET (or allied) accreditation of this repository’s code
+- **IINL-first naming** (this prototype uses **DIDs** from the start — ADR 0002)
+- Treating **stock IPFS / stock IOTA** as the production CONCRETE fabric (lab stand-ins only)
 
 ## Prior prototype platform habits
 
