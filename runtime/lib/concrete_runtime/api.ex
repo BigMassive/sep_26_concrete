@@ -17,10 +17,16 @@ defmodule ConcreteRuntime.API do
     send_json(conn, 200, %{
       ok: true,
       service: "concrete_runtime",
-      beat: 3,
+      slice: "frozen",
+      phase: 2,
       ipfs: ipfs == :ok,
-      iota: iota == :ok
+      iota: iota == :ok,
+      naming: ConcreteRuntime.IotaIdentity.status()
     })
+  end
+
+  get "/v1/identity/status" do
+    send_json(conn, 200, ConcreteRuntime.IotaIdentity.status())
   end
 
   get "/v1/bootstrap" do

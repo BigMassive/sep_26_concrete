@@ -51,8 +51,10 @@ Record choices under `docs/decisions/` before coding:
 - [x] Lab supervisor → **yes, labelled harness**; seed + god-view; not live cap/commit authority ([ADR 0004](decisions/0004-world-state-supervisor.md))
 - [ ] RINA overlay packaging (later in this prototype; [ADR 0002](decisions/0002-ipfs-iota-did.md))
 - [x] BEAM app shape for UI → **OTP without Phoenix**; Godot only ([ADR 0004](decisions/0004-world-state-supervisor.md))
-- [ ] Exact OTP process layout when coding starts
-- [ ] Bootstrap capability wire format (Move / DID-linked / …) at implementation
+- [x] Interim naming for frozen slice → **lab DID + IPFS DID doc**; IOTA Identity = Phase 2 ([ADR 0006](decisions/0006-lab-did-until-iota-identity.md))
+- [ ] Exact OTP process layout (evolve with Phase 2)
+- [ ] Bootstrap capability wire format (Move / DID-linked / …) when caps move on-ledger with Identity
+- [ ] IOTA Identity create / resolve / update-head on localnet (Phase 2 active)
 
 ## Programme map vs this prototype
 

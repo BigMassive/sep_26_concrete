@@ -2,8 +2,8 @@ defmodule ConcreteRuntime.InfoObjects do
   @moduledoc """
   Named info objects: DID → IPFS commit head, gated by bootstrap capability.
 
-  DID method for this lab: `did:concrete:lab:<id>` (ADR 0002 direction;
-  IOTA Identity method string can replace this once published on-chain).
+  DID method for the frozen slice: `did:concrete:lab:<id>` ([ADR 0006](../../docs/decisions/0006-lab-did-until-iota-identity.md)).
+  Phase 2: on-ledger IOTA Identity via `ConcreteRuntime.IotaIdentity`.
   """
   use GenServer
 

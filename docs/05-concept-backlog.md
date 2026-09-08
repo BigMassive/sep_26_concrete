@@ -8,14 +8,15 @@ Triage every concept before it grows scaffolding. Narrative outline: [07-program
 | **stub** | Interface or minimal placeholder only |
 | **paper** | Document / link to site; do not implement yet |
 
-Slice acceptance criteria are **not frozen** yet — treat current **slice** rows as provisional until [04-vertical-slice.md](04-vertical-slice.md) is locked.
+Slice acceptance criteria are **frozen** ([04-vertical-slice.md](04-vertical-slice.md)). Further work is **Phase 2** promotion (see [roadmap.md](roadmap.md)).
 
 ## From Mar_26 / site (seed)
 
 | Concept | Status | Notes |
 |---------|--------|-------|
 | Blob / Tree / Commit content model | slice | Residue — core of the slice; stock IPFS (ADR 0002) |
-| Name → head (**DID**) | slice | IOTA Identity on stock IOTA from the start (ADR 0002); not IINL-first |
+| Name → head (**DID**) | slice | Lab method `did:concrete:lab:` + IPFS DID doc frozen ([ADR 0006](decisions/0006-lab-did-until-iota-identity.md)) |
+| IOTA Identity publish (`did:iota:…` name → head) | **Phase 2 (active)** | Closes ADR 0002 gap; first post-freeze promotion |
 | One capability check on mutate | slice | Real check; bootstrap cap covers first slice (ADR 0005) |
 | Bootstrap capability (first user / first node) | slice | Do-anything/admin; auto-mint once (ADR 0005) |
 | Thin UI veneer (Godot) | slice | ADR 0001 — editor on host; project in-repo |
@@ -112,7 +113,7 @@ Slice acceptance criteria are **not frozen** yet — treat current **slice** row
 | Concept | Status | Intent | Touches |
 |---------|--------|--------|---------|
 | Data and information on IPFS (AES-256-GCM DAG) | paper | Confidential content plane | Content store |
-| DID preferred over IINL; DID for CoT IOTA | slice | **ADR 0002** — DIDs from the start | Name → head |
+| DID preferred over IINL; DID for CoT IOTA | slice / Phase 2 | Lab DID frozen ([ADR 0006](decisions/0006-lab-did-until-iota-identity.md)); Identity publish active | Name → head |
 | C_aud + ML-KEM-1024 → auditor recovers K_DAG | paper | Auditor path into encrypted DAGs | IINL/DID |
 | Data access: vault/keystore + capability | paper | Simpler gate for data | Caps |
 | Information access: K_DAG + head + permission then crypto | paper | Mar_25/26 information path | Keystore |

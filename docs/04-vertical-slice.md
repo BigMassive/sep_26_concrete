@@ -2,13 +2,15 @@
 
 One end-to-end path. Everything we build should serve this path until it is real.
 
-## Proposed slice (draft — refine before coding)
+## Slice (frozen)
 
 > A user **creates a named info object**, a **capability is checked** once, a **commit advances**, and the **UI reflects backend state only**.
 
-### Acceptance criteria (draft)
+Frozen: **2026-09-08** (owner sign-off via storyboard completion). Interim naming method: [ADR 0006](decisions/0006-lab-did-until-iota-identity.md).
 
-1. An info object exists with a durable **DID** and a **commit head** (Blob←Tree←Commit on IPFS).
+### Acceptance criteria
+
+1. An info object exists with a durable **DID** and a **commit head** (content + commit on IPFS). Lab method: `did:concrete:lab:…` with DID document CID on IPFS ([ADR 0006](decisions/0006-lab-did-until-iota-identity.md)).
 2. Advancing the head requires passing **one** explicit authority/capability check (fail closed). For the first instance, the **bootstrap capability** (auto-granted to the first user on the first node — do-anything/admin) satisfies this when present ([ADR 0005](decisions/0005-bootstrap-capability.md)).
 3. Reading the current head and payload does not invent UI-only state; refresh from backend.
 4. Demo path is documented; lab harness (if any) is labelled as harness.
@@ -24,10 +26,11 @@ One end-to-end path. Everything we build should serve this path until it is real
 - Production security of secrets on the wire
 - RINA overlay (comes later in this prototype; first path is TCP/IP — [ADR 0002](decisions/0002-ipfs-iota-did.md))
 - Treating stock IPFS/IOTA as the final CONCRETE fabric
+- On-ledger **IOTA Identity** publish (`did:iota:…`) — Phase 2 ([ADR 0006](decisions/0006-lab-did-until-iota-identity.md))
 
 ## Status
 
-**Draft → ready to freeze pending owner sign-off.** Beats 0–5 runnable; beat 6 via Godot refresh / reopen.
+**Frozen.** Storyboard beats 0–6 done. Phase 1 slice path is demoable; further work is Phase 2 backlog promotion.
 
 ## First-iteration storyboard
 
@@ -39,7 +42,7 @@ One end-to-end path. Everything we build should serve this path until it is real
 | **3** | Reflect — Godot shows backend state only | **done** (`./scripts/godot-up.sh`) |
 | **4** | Advance — King updates content; head moves | **done** (API + Godot) |
 | **5** | Denied — second user fails closed | **done** (API + Godot) |
-| 6 | Refresh proof — UI restart still matches backend | pending (manual: reopen Godot) |
+| **6** | Refresh proof — UI / OTP restart still matches backend | **done** (`./scripts/beat6-smoke.sh`) |
 
 ## Scenario sketch
 
@@ -48,7 +51,7 @@ Godot physical veneer + OTP nodes ([ADR 0001](decisions/0001-lab-toolchain.md), 
 - Actors: **King** (first user on first node, holds bootstrap capability); a second user without that cap; working OTP node(s); optional labelled lab supervisor
 - Happy path: King creates/advances an info object (DID → IPFS head); capability check passes; Godot refreshes from OTP
 - Failure path (capability denied): second user attempts the same mutate → fail closed; Godot shows backend denial, not a local success
-- Note: Godot may later show **god-view** vs **node belief** markers; not required for first freeze
+- Note: Godot may later show **god-view** vs **node belief** markers; not required for this freeze
 
 ### Beat 0 — lab up
 
@@ -76,4 +79,13 @@ First start of `runtime/` creates **node-1**, principal **King**, and the **boot
 ./scripts/godot-up.sh      # physical veneer (beat 3+)
 ```
 
-King creates `did:concrete:lab:…` with content + commit on **IPFS**; DID doc CID updated; optional **IOTA checkpoint** stamp on the commit metadata (not full on-chain Identity yet). Advance requires bootstrap cap. Godot talks only to OTP `:4000` — [godot/README.md](../godot/README.md).
+King creates `did:concrete:lab:…` with content + commit on **IPFS**; DID doc CID updated; optional **IOTA checkpoint** stamp on the commit metadata. Advance requires bootstrap cap. Godot talks only to OTP `:4000` — [godot/README.md](../godot/README.md).
+
+### Beat 6 — refresh proof
+
+```bash
+./scripts/beat6-smoke.sh   # OTP restart; did/head/content unchanged
+# optional: reopen Godot and confirm plaque matches API
+```
+
+OTP reloads plaque from disk + IPFS. Godot has **no** local plaque store — reopen only re-GETs OTP.

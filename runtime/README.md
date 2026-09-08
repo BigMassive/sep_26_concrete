@@ -27,7 +27,8 @@ Requires lab IPFS (`./scripts/lab-up.sh`). Creates `did:concrete:lab:…`, store
 
 | Method | Path | Purpose |
 |--------|------|---------|
-| GET | `/health` | Liveness (+ `ipfs` / `iota` flags) |
+| GET | `/health` | Liveness (+ `ipfs` / `iota` / naming status) |
+| GET | `/v1/identity/status` | Phase 2 IOTA Identity readiness ([docs/08](../docs/08-phase2-iota-identity.md)) |
 | GET | `/v1/bootstrap` | Node, King, bootstrap cap, principals |
 | POST | `/v1/principals` | `{"display_name":"Eve"}` — extra user **without** bootstrap cap |
 | POST | `/v1/capability/check` | `{"principal_id":"…","action":"mutate"}` — allow/deny |
@@ -36,4 +37,4 @@ Requires lab IPFS (`./scripts/lab-up.sh`). Creates `did:concrete:lab:…`, store
 | POST | `/v1/info_objects` | Create (King / bootstrap cap) |
 | POST | `/v1/info_objects/advance` | Advance head (cap-checked) |
 
-State: `lab/data/node/` (gitignored).
+State: `lab/data/node/` (gitignored). Slice frozen; Identity publish is Phase 2.

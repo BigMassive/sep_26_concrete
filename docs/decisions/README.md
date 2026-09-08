@@ -24,5 +24,6 @@ Suggested template:
 | [0003](0003-runtime-beam.md) | Runtime — Elixir / Erlang (BEAM) | accepted |
 | [0004](0004-world-state-supervisor.md) | World state, lab supervisor, Godot veneer | accepted |
 | [0005](0005-bootstrap-capability.md) | Bootstrap capability — first user on first node | accepted |
+| [0006](0006-lab-did-until-iota-identity.md) | Interim lab DID until IOTA Identity publish | accepted |
 
 Further open questions are listed in [03-architecture.md](../03-architecture.md).
