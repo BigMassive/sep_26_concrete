@@ -14,15 +14,14 @@ As with IPFS/IOTA, BEAM distribution and sockets will use **TCP/IP** under the h
 ## Decision
 
 1. **Runtime language:** **Elixir** (and Erlang/OTP where appropriate) on the **BEAM** is the node runtime for `sep_26_concrete`.
-2. **Role:** orchestration and typed clients to lab IPFS / IOTA Identity; capability check on the mutate path; HTTP (or similar) surface for Godot — not a requirement to re-home product narrative inside Phoenix or to ship a multi-node BEAM cluster on day one.
+2. **Role:** orchestration and typed clients to lab IPFS / IOTA Identity; capability check on the mutate path; HTTP (or similar) surface for Godot — **not** a Phoenix (or other BEAM web) UI; not a requirement to ship a multi-node BEAM cluster on day one.
 3. **Transport honesty:** accept **TCP/IP** for BEAM distribution, HTTP, and IPFS/IOTA clients now. Keep dial/transport concerns thin so a **RINA overlay** can land later without rewriting info-object or capability semantics.
 4. **Lab packaging:** runtime may run on the host or in Compose; if containerised, pin versions and label as **lab harness**. Prefer clone-and-go that does not require a proprietary toolchain (Elixir/OTP are OSS).
 5. **Integration style:** use libraries/SDKs or HTTP APIs from Elixir — **not** `System.cmd` + scrape CLI JSON for ledger mutations (Mar_26 anti-pattern).
-6. **Godot** stays the UI veneer; it does not become the orchestration runtime.
+6. **Godot** stays the UI veneer; it does not become the orchestration runtime. **No Phoenix** — see [ADR 0004](0004-world-state-supervisor.md).
 
 ## Consequences
 
-- Open decision “runtime language / distribution model” is resolved toward BEAM; exact app layout (plain OTP vs Phoenix, single node vs named cluster) can be a follow-on ADR or slice detail when coding starts.
-- Contributor toolchain adds OSS **Elixir + OTP** (version pinned in docs when the project lands).
+- Exact app layout (plain OTP vs named cluster) can be a follow-on detail when coding starts; **Phoenix is out** for UI ([ADR 0004](0004-world-state-supervisor.md)).
 - Distribution features (nodes, registries) are available when the slice needs them; do not build a mesh platform before the slice works.
 - RINA overlay work must treat BEAM-over-TCP as replaceable underlay plumbing, same as ADR 0002’s stance on IPFS/IOTA.

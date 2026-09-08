@@ -27,7 +27,7 @@ Certainty: treat this document as **Probable** programme shape unless marked oth
 ## Time, space, presence
 
 - **National / local clock synchronisation** is first-class.
-- Sync enables basic **trilateration** so devices know **relative physical positions** (security signal).
+- Sync enables basic **trilateration** so devices know **relative physical positions** (security signal). Keep **god-view** (actual) distinct from **node belief** (estimate) — [ADR 0004](decisions/0004-world-state-supervisor.md).
 - Nodes also **monitor positions / identity** of other entities (e.g. users).
 - **Identity evidence framework (speculative prototype math):** continuous 4D spacetime manifold; local readings → trajectory tubes / vector fields; neighbour restrictions = projection on intersecting hypersurface; gluing for alignment; local **α / β / ω** (likelihood, confidence, weight of evidence) matched to capabilities; cohomology obstruction → **nullifier**; **Heyting** constraints (e.g. impossible speed). Start with login; later cameras, RFID, etc. — **system security capability changes over time**. Keep local (avoid N² full share).
 

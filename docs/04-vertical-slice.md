@@ -28,8 +28,9 @@ One end-to-end path. Everything we build should serve this path until it is real
 
 ## Scenario sketch (optional later)
 
-Placeholders for scenario scripts / Godot scenes once docs freeze (Godot + Compose lab: [ADR 0001](decisions/0001-lab-toolchain.md)):
+Placeholders for scenario scripts / Godot scenes once docs freeze ([ADR 0001](decisions/0001-lab-toolchain.md), [ADR 0004](decisions/0004-world-state-supervisor.md)):
 
-- Actors:
-- Happy path:
+- Actors: users in a shared physical-world veneer; working **OTP nodes**; optional labelled **lab supervisor**
+- Happy path: create/advance info object via OTP; Godot refreshes from backend
 - Failure path (capability denied):
+- Note: Godot may later show **god-view** vs **node belief** markers; not required for first freeze

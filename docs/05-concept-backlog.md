@@ -20,7 +20,9 @@ Slice acceptance criteria are **not frozen** yet — treat current **slice** row
 | Thin UI veneer (Godot) | slice | ADR 0001 — editor on host; project in-repo |
 | Docker Compose lab harness | stub or slice | Clone-and-go services only when slice needs them; not product topology |
 | Stock IPFS + stock IOTA (TCP/IP) | slice | Lab stand-ins; not final fabric (ADR 0002) |
-| Elixir / BEAM node runtime | slice | ADR 0003 — TCP/IP under the hood; RINA overlay later |
+| Elixir / BEAM node runtime | slice | ADR 0003 — OTP API; no Phoenix UI (ADR 0004) |
+| Lab supervisor (harness) | stub or slice | ADR 0004 — seed + god-view; not commit/cap authority |
+| God-view vs node belief (position) | paper → stub when space lands | Two fields; Godot may render both (ADR 0004) |
 | RINA overlay | stub → later slice | After first TCP/IP path; same prototype (ADR 0002) |
 | Serialised mutation of shared authority | stub or slice | If shared AdminCap-like object exists |
 | Keystore / crypto hand-out | paper | Real path in programme map; not until slice needs keys |
@@ -60,7 +62,7 @@ Slice acceptance criteria are **not frozen** yet — treat current **slice** row
 | Concept | Status | Intent | Touches |
 |---------|--------|--------|---------|
 | National / local clock synchronisation (first-class) | paper | Foundation time service | Clock, DWDM |
-| Trilateration / relative physical position | paper | Position as security signal | Sync, caps |
+| Trilateration / relative physical position | paper | Position as security signal; keep **god-view ≠ belief** (ADR 0004) | Sync, caps |
 | Node monitors entity/user position + identity | paper | Presence as observed state | Identity evidence |
 | 4D manifold presence framework (tubes, intersections, gluing) | paper | Speculative local identity geometry; anti-N² | αβω, sensors |
 | Local α / β / ω vs capability thresholds | paper | Graded identity evidence | Caps |

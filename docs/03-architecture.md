@@ -16,8 +16,8 @@ Working architecture for `sep_26_concrete`. This is **not** a restatement of the
    (CID graph)         (name → head, caps / AdminCap-like)
 ```
 
-- **UI** — thinnest possible control/observation surface; **Godot** (see [ADR 0001](decisions/0001-lab-toolchain.md)).
-- **Node runtime** — **Elixir / Erlang (BEAM)** for orchestration ([ADR 0003](decisions/0003-runtime-beam.md)); TCP/IP under the hood now, RINA overlay later.
+- **UI** — **Godot** physical-world veneer only; no Phoenix ([ADR 0001](decisions/0001-lab-toolchain.md), [ADR 0004](decisions/0004-world-state-supervisor.md)).
+- **Node runtime** — **Elixir / OTP (BEAM)** for orchestration ([ADR 0003](decisions/0003-runtime-beam.md)); TCP/IP under the hood now, RINA overlay later.
 - **Content store** — content-addressed Blob / Tree / Commit graph on **stock IPFS** (lab stand-in; [ADR 0002](decisions/0002-ipfs-iota-did.md)).
 - **Naming + authority** — durable **DID** → head (IOTA Identity on **stock IOTA**); gated mutation ([ADR 0002](decisions/0002-ipfs-iota-did.md)).
 
@@ -25,9 +25,10 @@ Working architecture for `sep_26_concrete`. This is **not** a restatement of the
 
 | | Lab harness (allowed) | Product narrative (goal) |
 |--|------------------------|---------------------------|
-| Control | May use a privileged supervisor for demos | Equal peers; no central controller required |
+| Control | May use a privileged **lab supervisor** for demos (seed world, publish god-view) | Equal peers; no central controller required |
 | Packaging | **Docker Compose** OK as stand-ins; pin versions for clone-and-go | Stand-ins are disposable; none assumed final |
-| UI tooling | Godot editor on **host**; project in-repo talks to published ports | Not a shipping client stack commitment |
+| UI tooling | Godot editor on **host**; project in-repo talks to OTP API ports | Physical veneer only; not ground truth ([ADR 0004](decisions/0004-world-state-supervisor.md)) |
+| Position | Supervisor (lab) may hold **god-view**; node holds **belief** | Same split without a privileged centre |
 
 If a lab harness is used, label it explicitly in the slice doc so it is not mistaken for architecture. Contributor path: OSS tools only; Cursor optional ([ADR 0001](decisions/0001-lab-toolchain.md)).
 
@@ -47,9 +48,10 @@ Record choices under `docs/decisions/` before coding:
 - [x] Content store → **stock IPFS** (lab stand-in; [ADR 0002](decisions/0002-ipfs-iota-did.md))
 - [x] Naming → **DID** via IOTA Identity on stock IOTA ([ADR 0002](decisions/0002-ipfs-iota-did.md))
 - [ ] How the first capability is represented and checked
-- [ ] Whether a lab supervisor exists and how it is labelled
+- [x] Lab supervisor → **yes, labelled harness**; seed + god-view; not live cap/commit authority ([ADR 0004](decisions/0004-world-state-supervisor.md))
 - [ ] RINA overlay packaging (later in this prototype; [ADR 0002](decisions/0002-ipfs-iota-did.md))
-- [ ] Exact BEAM app shape (OTP vs Phoenix, single node vs cluster) when coding starts
+- [x] BEAM app shape for UI → **OTP without Phoenix**; Godot only ([ADR 0004](decisions/0004-world-state-supervisor.md))
+- [ ] Exact OTP process layout when coding starts
 
 ## Programme map vs this prototype
 

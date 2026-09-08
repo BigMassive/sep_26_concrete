@@ -33,7 +33,10 @@ Single place for terms used in this prototype. Prefer these spellings in docs an
 | **Slice / stub / paper** | Triage for concepts: implement now / placeholder interface / document only. |
 | **Residue** | Idea or pattern kept from a discarded prototype. |
 | **Lab harness** | Disposable Docker Compose (etc.) topology for demos — not the product node architecture. |
-| **Godot** | Planned OSS UI veneer for this prototype (editor on host; see ADR 0001). |
+| **Godot** | OSS UI veneer: thin **physical-world** view (environments, avatars, drawn nodes). Not durable ground truth ([ADR 0004](decisions/0004-world-state-supervisor.md)). |
+| **Lab supervisor** | Privileged lab harness process: bootstrap, seed durable facts, may publish **god-view** position. Not product mesh centre; not live capability/commit authority. |
+| **God-view (position)** | Objective / actual position of a node in the modelled or physical world. Lab: often supervisor-published. Not solely node self-report. |
+| **Node belief (position)** | Where the node *thinks* it is (local estimate). Owned by the node (OTP); confidence/αβω later. |
 
 ## Certainty labels (from the site)
 
