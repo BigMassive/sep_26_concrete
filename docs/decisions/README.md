@@ -17,4 +17,8 @@ Suggested template:
 ## Consequences
 ```
 
-No ADRs yet — open questions are listed in [03-architecture.md](../03-architecture.md).
+| ADR | Title | Status |
+|-----|-------|--------|
+| [0001](0001-lab-toolchain.md) | Lab toolchain — Docker Compose + Godot (OSS) | accepted |
+
+Further open questions are listed in [03-architecture.md](../03-architecture.md).

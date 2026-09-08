@@ -26,7 +26,7 @@ One end-to-end path. Everything we build should serve this path until it is real
 
 ## Scenario sketch (optional later)
 
-Placeholders for scenario scripts / Godot (or other) scenes once docs freeze:
+Placeholders for scenario scripts / Godot scenes once docs freeze (Godot + Compose lab: [ADR 0001](decisions/0001-lab-toolchain.md)):
 
 - Actors:
 - Happy path:

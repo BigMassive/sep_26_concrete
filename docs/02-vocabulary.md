@@ -32,6 +32,8 @@ Single place for terms used in this prototype. Prefer these spellings in docs an
 | **Vertical slice** | One end-to-end user-visible path implemented through all layers that matter for that path. |
 | **Slice / stub / paper** | Triage for concepts: implement now / placeholder interface / document only. |
 | **Residue** | Idea or pattern kept from a discarded prototype. |
+| **Lab harness** | Disposable Docker Compose (etc.) topology for demos — not the product node architecture. |
+| **Godot** | Planned OSS UI veneer for this prototype (editor on host; see ADR 0001). |
 
 ## Certainty labels (from the site)
 

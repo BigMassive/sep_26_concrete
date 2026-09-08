@@ -35,6 +35,16 @@ This repository starts **docs-first**: architecture, residues from prior work, v
 
 **Phase:** documentation and planning only. No runtime yet.
 
+## Lab environment (planned)
+
+Per [docs/decisions/0001-lab-toolchain.md](docs/decisions/0001-lab-toolchain.md):
+
+- **Docker Compose** for lab/backend services (harness, not product topology).
+- **Godot** (OSS) on the host for the UI project in this repo.
+- **Required tools are open source** — no paid licences. Cursor is optional.
+
+Clone-and-go compose + Godot project land once the vertical slice is frozen; until then this is docs-only.
+
 ## Licence / contribution
 
 Prototype material — expect iteration and discard of approaches that do not earn their keep. Prefer Issues/Discussions on this repo for this prototype; programme-level conversation remains on [BigMassive/CONCRETE](https://github.com/BigMassive/CONCRETE).

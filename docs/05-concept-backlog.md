@@ -17,7 +17,8 @@ Slice acceptance criteria are **not frozen** yet — treat current **slice** row
 | Blob / Tree / Commit content model | slice | Residue — core of the slice |
 | Name → head (IINL-like or DID) | slice | Prefer DID (incl. CoT IOTA DID); IINL OK as interim |
 | One capability check on mutate | slice | Must be real, not OPA-shaped theatre |
-| Thin UI veneer | slice | Technology TBD |
+| Thin UI veneer (Godot) | slice | ADR 0001 — editor on host; project in-repo |
+| Docker Compose lab harness | stub or slice | Clone-and-go services only when slice needs them; not product topology |
 | Serialised mutation of shared authority | stub or slice | If shared AdminCap-like object exists |
 | Keystore / crypto hand-out | paper | Real path in programme map; not until slice needs keys |
 | Network policy engine (OPA-like) | paper | Only if check cannot live closer to the action |
