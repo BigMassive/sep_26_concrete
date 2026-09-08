@@ -16,6 +16,7 @@ defmodule ConcreteRuntime.Application do
 
         [
           {ConcreteRuntime.Bootstrap, data_dir: data_dir},
+          {ConcreteRuntime.InfoObjects, data_dir: data_dir},
           {Bandit, plug: ConcreteRuntime.API, scheme: :http, port: port}
         ]
       else

@@ -27,7 +27,7 @@ One end-to-end path. Everything we build should serve this path until it is real
 
 ## Status
 
-**Draft → ready to freeze pending owner sign-off.** Beat 0 lab harness exists (`./scripts/lab-up.sh`).
+**Draft → ready to freeze pending owner sign-off.** Beats 0–5 runnable; beat 6 via Godot refresh / reopen.
 
 ## First-iteration storyboard
 
@@ -35,11 +35,11 @@ One end-to-end path. Everything we build should serve this path until it is real
 |------|------|--------|
 | **0** | Lab up — private IPFS + IOTA via `./scripts/lab-up.sh` | **done** (harness) |
 | **1** | Bootstrap — first user on first node gets bootstrap capability | **done** (`./scripts/node-up.sh`) |
-| 2 | Create — King creates DID + first commit | pending |
-| 3 | Reflect — Godot shows backend state only | pending |
-| 4 | Advance — King updates content; head moves | pending |
-| 5 | Denied — second user fails closed | pending |
-| 6 | Refresh proof — UI restart still matches backend | pending |
+| **2** | Create — King creates DID + first commit | **done** (`./scripts/beat2-smoke.sh`) |
+| **3** | Reflect — Godot shows backend state only | **done** (`./scripts/godot-up.sh`) |
+| **4** | Advance — King updates content; head moves | **done** (API + Godot) |
+| **5** | Denied — second user fails closed | **done** (API + Godot) |
+| 6 | Refresh proof — UI restart still matches backend | pending (manual: reopen Godot) |
 
 ## Scenario sketch
 
@@ -66,3 +66,14 @@ Brings up **project-private** IPFS (swarm key + PNET) and a **local IOTA** netwo
 ```
 
 First start of `runtime/` creates **node-1**, principal **King**, and the **bootstrap/do-anything** capability (ADR 0005). State: `lab/data/node/bootstrap.json`. Details: [runtime/README.md](../runtime/README.md).
+
+### Beats 2–5 — DID + IPFS commit + cap check
+
+```bash
+./scripts/lab-up.sh
+./scripts/node-up.sh
+./scripts/beat2-smoke.sh   # create, get, advance as King, Eve 403
+./scripts/godot-up.sh      # physical veneer (beat 3+)
+```
+
+King creates `did:concrete:lab:…` with content + commit on **IPFS**; DID doc CID updated; optional **IOTA checkpoint** stamp on the commit metadata (not full on-chain Identity yet). Advance requires bootstrap cap. Godot talks only to OTP `:4000` — [godot/README.md](../godot/README.md).

@@ -14,13 +14,26 @@ On first start (empty `lab/data/node/`), creates **node-1**, principal **King**,
 ./scripts/beat1-smoke.sh      # terminal B
 ```
 
+## Beats 2+ — info objects (DID + IPFS)
+
+Requires lab IPFS (`./scripts/lab-up.sh`). Creates `did:concrete:lab:…`, stores content/commit/DID doc on IPFS, stamps optional IOTA checkpoint metadata.
+
+```bash
+./scripts/beat2-smoke.sh
+./scripts/godot-up.sh      # Godot veneer
+```
+
 ## HTTP
 
 | Method | Path | Purpose |
 |--------|------|---------|
-| GET | `/health` | Liveness |
+| GET | `/health` | Liveness (+ `ipfs` / `iota` flags) |
 | GET | `/v1/bootstrap` | Node, King, bootstrap cap, principals |
 | POST | `/v1/principals` | `{"display_name":"Eve"}` — extra user **without** bootstrap cap |
 | POST | `/v1/capability/check` | `{"principal_id":"…","action":"mutate"}` — allow/deny |
+| GET | `/v1/info_objects` | List known objects |
+| GET | `/v1/info_object?did=…` | Current plaque (content + head) |
+| POST | `/v1/info_objects` | Create (King / bootstrap cap) |
+| POST | `/v1/info_objects/advance` | Advance head (cap-checked) |
 
-State file: `lab/data/node/bootstrap.json` (gitignored under `lab/data/`).
+State: `lab/data/node/` (gitignored).

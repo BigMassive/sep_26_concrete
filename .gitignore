@@ -13,6 +13,10 @@ node_modules/
 .elixir_ls/
 *.beam
 
-# Lab harness local state (swarm key, IOTA genesis, IPFS repo)
+# Lab harness local state (swarm key, IOTA genesis, IPFS repo, OTP state)
 lab/data/
 .tmp-iota/
+
+# Godot editor junk
+godot/.godot/
+godot/.import/
