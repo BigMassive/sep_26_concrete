@@ -27,7 +27,7 @@ What remains after discarding the prior lab prototype. Full architect review liv
 
 ## Explicitly unfinished in Mar_26 (do not treat as done)
 
-- King / capability bootstrap on launch
+- King / capability bootstrap on launch — **sep_26:** first user on first node gets bootstrap (do-anything) capability ([ADR 0005](decisions/0005-bootstrap-capability.md))
 - Real encryption (`falsity_encryption_key_int` was a placeholder)
 - `previously_started` lifecycle closed loop
 - `iota_ri` Move package wired into Elixir

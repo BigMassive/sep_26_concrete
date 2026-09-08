@@ -16,7 +16,8 @@ Slice acceptance criteria are **not frozen** yet — treat current **slice** row
 |---------|--------|-------|
 | Blob / Tree / Commit content model | slice | Residue — core of the slice; stock IPFS (ADR 0002) |
 | Name → head (**DID**) | slice | IOTA Identity on stock IOTA from the start (ADR 0002); not IINL-first |
-| One capability check on mutate | slice | Must be real, not OPA-shaped theatre |
+| One capability check on mutate | slice | Real check; bootstrap cap covers first slice (ADR 0005) |
+| Bootstrap capability (first user / first node) | slice | Do-anything/admin; auto-mint once (ADR 0005) |
 | Thin UI veneer (Godot) | slice | ADR 0001 — editor on host; project in-repo |
 | Docker Compose lab harness | stub or slice | Clone-and-go services only when slice needs them; not product topology |
 | Stock IPFS + stock IOTA (TCP/IP) | slice | Lab stand-ins; not final fabric (ADR 0002) |

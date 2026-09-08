@@ -47,11 +47,12 @@ Record choices under `docs/decisions/` before coding:
 - [x] Lab packaging → **Docker Compose** harness; Godot on host ([ADR 0001](decisions/0001-lab-toolchain.md))
 - [x] Content store → **stock IPFS** (lab stand-in; [ADR 0002](decisions/0002-ipfs-iota-did.md))
 - [x] Naming → **DID** via IOTA Identity on stock IOTA ([ADR 0002](decisions/0002-ipfs-iota-did.md))
-- [ ] How the first capability is represented and checked
+- [x] How the first capability is represented and checked → **bootstrap cap to first user on first node** (do-anything; [ADR 0005](decisions/0005-bootstrap-capability.md))
 - [x] Lab supervisor → **yes, labelled harness**; seed + god-view; not live cap/commit authority ([ADR 0004](decisions/0004-world-state-supervisor.md))
 - [ ] RINA overlay packaging (later in this prototype; [ADR 0002](decisions/0002-ipfs-iota-did.md))
 - [x] BEAM app shape for UI → **OTP without Phoenix**; Godot only ([ADR 0004](decisions/0004-world-state-supervisor.md))
 - [ ] Exact OTP process layout when coding starts
+- [ ] Bootstrap capability wire format (Move / DID-linked / …) at implementation
 
 ## Programme map vs this prototype
 

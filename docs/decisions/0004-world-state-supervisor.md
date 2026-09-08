@@ -28,7 +28,7 @@ There is also a semantic split between **where a node actually is** and **where 
 
 6. A **lab supervisor** (e.g. privileged Compose/OTP process) **is allowed** for demos. It is **lab harness**, not product architecture.
 7. Supervisor responsibilities: bring up / coordinate lab processes; **seed** durable world/node facts into OTP; optionally publish connection endpoints to Godot clients.
-8. Supervisor must **not** be the live authority for capability checks or commit advances, and must **not** replace OTP as the store for working nodes.
+8. Supervisor must **not** be the live authority for capability checks or commit advances, and must **not** replace OTP as the store for working nodes. The **bootstrap capability** is held by the first **user**, not the supervisor ([ADR 0005](0005-bootstrap-capability.md)).
 
 ### God-view vs node belief (position)
 
