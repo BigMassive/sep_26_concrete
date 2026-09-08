@@ -33,20 +33,25 @@ This repository starts **docs-first**: architecture, residues from prior work, v
 
 ## Status
 
-**Phase:** documentation and planning only. No runtime yet.
+**Phase:** docs + lab harness (beat 0) + OTP bootstrap (beat 1). Godot UI and DID commits still pending.
 
-## Lab environment (planned)
+## Lab environment
 
-Per [docs/decisions/0001-lab-toolchain.md](docs/decisions/0001-lab-toolchain.md):
+Per [docs/decisions/0001-lab-toolchain.md](docs/decisions/0001-lab-toolchain.md) and [lab/README.md](lab/README.md):
 
-- **Docker Compose** for lab/backend services (harness, not product topology).
-- **Godot** (OSS) on the host for the UI project in this repo.
-- **Stock IPFS + stock IOTA** over TCP/IP for now; **DIDs** for naming ([ADR 0002](docs/decisions/0002-ipfs-iota-did.md)). RINA overlay later.
-- **Elixir / OTP** node runtime ([ADR 0003](docs/decisions/0003-runtime-beam.md)); **no Phoenix** — Godot is the physical-world UI ([ADR 0004](docs/decisions/0004-world-state-supervisor.md)).
-- **Lab supervisor** (labelled harness) may seed world state and publish **god-view** position; nodes hold **belief**; Godot renders (ADR 0004).
+- **Docker Compose** lab harness — project-private **IPFS** + **local IOTA** (not product topology).
+- **Godot** (OSS) on the host for the UI project (later beats).
+- **Elixir / OTP** node runtime (later beats); **no Phoenix**.
 - **Required tools are open source** — no paid licences. Cursor is optional.
 
-Clone-and-go compose + Godot project land once the vertical slice is frozen; until then this is docs-only.
+```bash
+./scripts/lab-up.sh      # beat 0: private IPFS + IOTA
+./scripts/node-up.sh     # beat 1: OTP + bootstrap capability (King)
+./scripts/beat1-smoke.sh
+./scripts/lab-status.sh
+./scripts/lab-down.sh    # add --wipe to reset local lab data
+```
+
 
 ## Licence / contribution
 

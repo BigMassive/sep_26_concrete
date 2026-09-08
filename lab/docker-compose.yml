@@ -1,0 +1,70 @@
+# LAB HARNESS — not product node topology (see docs/decisions/0001-lab-toolchain.md)
+#
+# Project-private IPFS (swarm key + PNET) and a local IOTA network.
+# Host ports bind to 127.0.0.1 only. Use: ./scripts/lab-up.sh
+
+name: sep26_concrete_lab
+
+services:
+  ipfs:
+    image: ipfs/kubo:v0.34.1
+    container_name: sep26_lab_ipfs
+    volumes:
+      - ./data/ipfs:/data/ipfs
+      - ./data/swarm.key:/swarm.key:ro
+      - ./ipfs/container-init.sh:/container-init.d/00-private-swarm.sh:ro
+    environment:
+      LIBP2P_FORCE_PNET: "1"
+      IPFS_SWARM_KEY_FILE: /swarm.key
+    ports:
+      - "127.0.0.1:5001:5001" # API
+      - "127.0.0.1:8080:8080" # Gateway
+      # Swarm not published to the host — stays on the compose network only
+    networks:
+      - lab
+    healthcheck:
+      test: ["CMD", "ipfs", "id"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 15s
+
+  iota:
+    build:
+      context: ./iota
+      dockerfile: Dockerfile
+      args:
+        IOTA_VERSION: v1.30.1
+    image: sep26_concrete/iota-localnet:v1.30.1
+    container_name: sep26_lab_iota
+    volumes:
+      - ./data/iota:/data/iota-config
+    ports:
+      - "127.0.0.1:9000:9000" # Fullnode JSON-RPC
+      - "127.0.0.1:9123:9123" # Faucet
+    networks:
+      - lab
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "curl",
+          "-sf",
+          "-X",
+          "POST",
+          "http://127.0.0.1:9000",
+          "-H",
+          "Content-Type: application/json",
+          "-d",
+          '{"jsonrpc":"2.0","id":1,"method":"iota_getLatestCheckpointSequenceNumber","params":[]}',
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 60s
+
+networks:
+  lab:
+    name: sep26_concrete_lab_net
+    driver: bridge
+    internal: false

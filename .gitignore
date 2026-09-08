@@ -12,3 +12,7 @@ deps/
 node_modules/
 .elixir_ls/
 *.beam
+
+# Lab harness local state (swarm key, IOTA genesis, IPFS repo)
+lab/data/
+.tmp-iota/

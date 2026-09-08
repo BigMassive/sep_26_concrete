@@ -27,7 +27,19 @@ One end-to-end path. Everything we build should serve this path until it is real
 
 ## Status
 
-**Draft → ready to freeze pending owner sign-off.** Lab stack and bootstrap capability ADRs are in place. Fill scenario sketch, then mark frozen.
+**Draft → ready to freeze pending owner sign-off.** Beat 0 lab harness exists (`./scripts/lab-up.sh`).
+
+## First-iteration storyboard
+
+| Beat | Name | Status |
+|------|------|--------|
+| **0** | Lab up — private IPFS + IOTA via `./scripts/lab-up.sh` | **done** (harness) |
+| **1** | Bootstrap — first user on first node gets bootstrap capability | **done** (`./scripts/node-up.sh`) |
+| 2 | Create — King creates DID + first commit | pending |
+| 3 | Reflect — Godot shows backend state only | pending |
+| 4 | Advance — King updates content; head moves | pending |
+| 5 | Denied — second user fails closed | pending |
+| 6 | Refresh proof — UI restart still matches backend | pending |
 
 ## Scenario sketch
 
@@ -37,3 +49,20 @@ Godot physical veneer + OTP nodes ([ADR 0001](decisions/0001-lab-toolchain.md), 
 - Happy path: King creates/advances an info object (DID → IPFS head); capability check passes; Godot refreshes from OTP
 - Failure path (capability denied): second user attempts the same mutate → fail closed; Godot shows backend denial, not a local success
 - Note: Godot may later show **god-view** vs **node belief** markers; not required for first freeze
+
+### Beat 0 — lab up
+
+```bash
+./scripts/lab-up.sh
+```
+
+Brings up **project-private** IPFS (swarm key + PNET) and a **local IOTA** network. Endpoints on `127.0.0.1` only. Details: [lab/README.md](../lab/README.md).
+
+### Beat 1 — bootstrap capability
+
+```bash
+./scripts/node-up.sh       # OTP on :4000
+./scripts/beat1-smoke.sh   # King allowed, Eve denied
+```
+
+First start of `runtime/` creates **node-1**, principal **King**, and the **bootstrap/do-anything** capability (ADR 0005). State: `lab/data/node/bootstrap.json`. Details: [runtime/README.md](../runtime/README.md).
