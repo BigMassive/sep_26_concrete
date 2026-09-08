@@ -3,7 +3,7 @@
 ## Phase 0 — Docs and plans (current)
 
 - [x] Create `sep_26_concrete` repo skeleton
-- [ ] Owner adds new concepts to [05-concept-backlog.md](05-concept-backlog.md)
+- [x] Owner adds new concepts to [05-concept-backlog.md](05-concept-backlog.md) (+ [07-programme-map.md](07-programme-map.md))
 - [ ] Freeze [04-vertical-slice.md](04-vertical-slice.md) acceptance criteria
 - [ ] Resolve open decisions in [03-architecture.md](03-architecture.md) via ADRs as needed
 - [ ] Optional: short link/PR note on BigMassive/CONCRETE pointing at this prototype

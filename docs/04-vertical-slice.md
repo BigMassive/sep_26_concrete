@@ -22,7 +22,7 @@ One end-to-end path. Everything we build should serve this path until it is real
 
 ## Status
 
-**Draft.** Owner: refine after new concepts are triaged in [05-concept-backlog.md](05-concept-backlog.md).
+**Draft.** Concepts are outlined in [07-programme-map.md](07-programme-map.md) and triaged in [05-concept-backlog.md](05-concept-backlog.md). **Freeze acceptance criteria next** — do not expand this slice to the whole programme map.
 
 ## Scenario sketch (optional later)
 

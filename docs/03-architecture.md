@@ -47,6 +47,10 @@ Record choices under `docs/decisions/` before coding:
 - [ ] How the first capability is represented and checked
 - [ ] Whether a lab supervisor exists and how it is labelled
 
+## Programme map vs this prototype
+
+Owner outline for hardware, CoTs, funding, K_DAG, Wendy-links, presence, etc. lives in [07-programme-map.md](07-programme-map.md) with triage in [05-concept-backlog.md](05-concept-backlog.md). Networking narrative on that map is **RINA** (not Ouroboros). Almost all of that map is **paper** until promoted.
+
 ## Non-architecture
 
-See [06-out-of-scope.md](06-out-of-scope.md). Site stack components (seL4, Ouroboros, Matrix, spacetime, full HQDM, resource markets) are **concerns on a map**, not commitments for this repo until promoted via backlog + ADR.
+See [06-out-of-scope.md](06-out-of-scope.md). Programme-map components (seL4, CHERI, RINA, TSS/MPC key ceremony, Matrix, national sync plant, full HQDM, task settler trio, etc.) are **concerns on a map**, not commitments for this repo until promoted via backlog + ADR.

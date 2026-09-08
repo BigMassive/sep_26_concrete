@@ -10,13 +10,19 @@ Explicit non-goals for `sep_26_concrete` so they are not silently re-imported fr
 
 ## Full stack components (unless promoted)
 
-- seL4 as the node OS
-- Ouroboros (or equivalent) as production networking
+Documented as programme paper in [07-programme-map.md](07-programme-map.md) / [05-concept-backlog.md](05-concept-backlog.md) — **not** deliverables of this prototype until promoted:
+
+- seL4 / CHERI / PQC TPM / tamper-erase hardware as the node
+- RINA (or any production networking) and DWDM / photonics plant
+- National or production clock-sync / trilateration / sensor presence stack
+- Category-theoretic presence engine (manifolds, cohomology nullifiers, Heyting checkers)
+- Real FIPS 202 / HKDF / ML-DSA / ML-KEM / AES-GCM / TSS / MPC validator key ceremonies
+- Shared task object / node journal / settler economics and partition anti-overspend protocol
+- Dongles / physical banks as shipping accessories
+- Maths standards / full 4D ontological model as a shipping requirement
+- Full Boss-Based Access Control, guards, revocation graphs, complete pseudonym systems
 - Matrix as communications fabric
-- Spacetime management / national time infrastructure
-- Dongles / physical security standards
-- Maths standards / 4D ontological model as a shipping requirement
-- Full Boss-Based Access Control, guards, revocation graphs, pseudonym systems
+- Formal UK TOP SECRET (or allied) accreditation of this repository’s code
 
 ## Prior prototype platform habits
 

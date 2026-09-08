@@ -27,6 +27,7 @@ This repository starts **docs-first**: architecture, residues from prior work, v
 | [docs/04-vertical-slice.md](docs/04-vertical-slice.md) | One end-to-end path |
 | [docs/05-concept-backlog.md](docs/05-concept-backlog.md) | Concepts: slice / stub / paper |
 | [docs/06-out-of-scope.md](docs/06-out-of-scope.md) | Explicit non-goals for this round |
+| [docs/07-programme-map.md](docs/07-programme-map.md) | Owner outline (mostly paper) |
 | [docs/roadmap.md](docs/roadmap.md) | Phased plan |
 | [docs/decisions/](docs/decisions/) | Architecture decision records (ADRs) |
 
