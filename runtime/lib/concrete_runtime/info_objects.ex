@@ -52,7 +52,8 @@ defmodule ConcreteRuntime.InfoObjects do
     with {:ok, _, _} <- ConcreteRuntime.Bootstrap.authorize(principal_id, "mutate"),
          :ok <- require_ipfs(),
          {:ok, checkpoint} <- optional_iota_checkpoint(),
-         {:ok, obj} <- build_new(principal_id, content, opts, checkpoint) do
+         {:ok, obj} <- build_new(principal_id, content, opts, checkpoint),
+         {:ok, obj} <- maybe_attach_iota_identity(obj) do
       objects = s.objects ++ [obj]
       persist!(s.path, objects)
       {:ok, public} = hydrate(obj)
@@ -71,7 +72,8 @@ defmodule ConcreteRuntime.InfoObjects do
          :ok <- require_ipfs(),
          obj when not is_nil(obj) <- Enum.find(s.objects, &(&1.did == did)),
          {:ok, checkpoint} <- optional_iota_checkpoint(),
-         {:ok, updated} <- build_advance(obj, principal_id, content, opts, checkpoint) do
+         {:ok, updated} <- build_advance(obj, principal_id, content, opts, checkpoint),
+         {:ok, updated} <- maybe_sync_iota_head(updated) do
       objects = Enum.map(s.objects, fn o -> if o.did == did, do: updated, else: o end)
       persist!(s.path, objects)
       {:ok, public} = hydrate(updated)
@@ -195,7 +197,9 @@ defmodule ConcreteRuntime.InfoObjects do
          updated_by: obj.updated_by,
          created_at: obj.created_at,
          updated_at: obj.updated_at,
-         iota_checkpoint: obj.iota_checkpoint
+         iota_checkpoint: obj.iota_checkpoint,
+         iota_did: Map.get(obj, :iota_did),
+         identity_object_id: Map.get(obj, :identity_object_id)
        }}
     end
   end
@@ -211,8 +215,48 @@ defmodule ConcreteRuntime.InfoObjects do
       :updated_by,
       :created_at,
       :updated_at,
-      :iota_checkpoint
+      :iota_checkpoint,
+      :iota_did,
+      :identity_object_id
     ])
+  end
+
+  defp maybe_attach_iota_identity(obj) do
+    case ConcreteRuntime.IotaIdentity.package_id() do
+      id when is_binary(id) and id != "" ->
+        case ConcreteRuntime.IotaIdentity.create_and_publish() do
+          {:ok, %{did: iota_did, identity_object_id: oid}} ->
+            _ = ConcreteRuntime.IotaIdentity.update_head(iota_did, obj.head_cid)
+
+            {:ok,
+             Map.merge(obj, %{
+               iota_did: iota_did,
+               identity_object_id: oid
+             })}
+
+          {:error, reason} ->
+            # Lab Identity is best-effort; do not fail the frozen lab DID path.
+            require Logger
+            Logger.warning("iota identity attach skipped: #{inspect(reason)}")
+            {:ok, obj}
+        end
+
+      _ ->
+        {:ok, obj}
+    end
+  end
+
+  defp maybe_sync_iota_head(obj) do
+    case Map.get(obj, :iota_did) do
+      did when is_binary(did) and did != "" ->
+        case ConcreteRuntime.IotaIdentity.update_head(did, obj.head_cid) do
+          {:ok, _} -> {:ok, obj}
+          {:error, _} -> {:ok, obj}
+        end
+
+      _ ->
+        {:ok, obj}
+    end
   end
 
   defp require_ipfs do
@@ -256,7 +300,9 @@ defmodule ConcreteRuntime.InfoObjects do
       "updated_by" => o.updated_by,
       "created_at" => o.created_at,
       "updated_at" => o.updated_at,
-      "iota_checkpoint" => o.iota_checkpoint
+      "iota_checkpoint" => o.iota_checkpoint,
+      "iota_did" => Map.get(o, :iota_did),
+      "identity_object_id" => Map.get(o, :identity_object_id)
     }
   end
 
@@ -271,7 +317,9 @@ defmodule ConcreteRuntime.InfoObjects do
       updated_by: m["updated_by"],
       created_at: m["created_at"],
       updated_at: m["updated_at"],
-      iota_checkpoint: m["iota_checkpoint"]
+      iota_checkpoint: m["iota_checkpoint"],
+      iota_did: m["iota_did"],
+      identity_object_id: m["identity_object_id"]
     }
   end
 

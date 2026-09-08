@@ -28,7 +28,10 @@ Requires lab IPFS (`./scripts/lab-up.sh`). Creates `did:concrete:lab:…`, store
 | Method | Path | Purpose |
 |--------|------|---------|
 | GET | `/health` | Liveness (+ `ipfs` / `iota` / naming status) |
-| GET | `/v1/identity/status` | Phase 2 IOTA Identity readiness ([docs/08](../docs/08-phase2-iota-identity.md)) |
+| GET | `/v1/identity/status` | Phase 2 IOTA Identity readiness |
+| POST | `/v1/identity` | Create on-ledger Identity (cap-checked) |
+| GET | `/v1/identity/resolve?did=…` | Resolve `did:iota:…` via RPC + OTP head map |
+| POST | `/v1/identity/head` | Track head CID for a DID (OTP until on-chain doc) |
 | GET | `/v1/bootstrap` | Node, King, bootstrap cap, principals |
 | POST | `/v1/principals` | `{"display_name":"Eve"}` — extra user **without** bootstrap cap |
 | POST | `/v1/capability/check` | `{"principal_id":"…","action":"mutate"}` — allow/deny |

@@ -29,6 +29,73 @@ defmodule ConcreteRuntime.API do
     send_json(conn, 200, ConcreteRuntime.IotaIdentity.status())
   end
 
+  post "/v1/identity" do
+    principal_id = conn.body_params["principal_id"]
+
+    cond do
+      not is_binary(principal_id) ->
+        send_json(conn, 400, %{error: "principal_id required"})
+
+      true ->
+        case ConcreteRuntime.Bootstrap.authorize(principal_id, "mutate") do
+          {:ok, _, _} ->
+            case ConcreteRuntime.IotaIdentity.create_and_publish() do
+              {:ok, created} ->
+                send_json(conn, 201, created)
+
+              {:error, :package_not_configured} ->
+                send_json(conn, 503, %{error: "package_not_configured"})
+
+              {:error, reason} ->
+                send_json(conn, 502, %{error: "identity_create_failed", detail: inspect(reason)})
+            end
+
+          {:error, :capability_denied} ->
+            send_json(conn, 403, %{error: "capability_denied"})
+        end
+    end
+  end
+
+  get "/v1/identity/resolve" do
+    did = conn.query_params["did"]
+
+    cond do
+      not is_binary(did) ->
+        send_json(conn, 400, %{error: "did query param required"})
+
+      true ->
+        case ConcreteRuntime.IotaIdentity.resolve(did) do
+          {:ok, resolved} -> send_json(conn, 200, resolved)
+          {:error, :bad_did} -> send_json(conn, 400, %{error: "bad_did"})
+          {:error, reason} -> send_json(conn, 502, %{error: "resolve_failed", detail: inspect(reason)})
+        end
+    end
+  end
+
+  post "/v1/identity/head" do
+    principal_id = conn.body_params["principal_id"]
+    did = conn.body_params["did"]
+    head_cid = conn.body_params["head_cid"]
+
+    cond do
+      not is_binary(principal_id) or not is_binary(did) or not is_binary(head_cid) ->
+        send_json(conn, 400, %{error: "principal_id, did, head_cid required"})
+
+      true ->
+        case ConcreteRuntime.Bootstrap.authorize(principal_id, "mutate") do
+          {:ok, _, _} ->
+            case ConcreteRuntime.IotaIdentity.update_head(did, head_cid) do
+              {:ok, resolved} -> send_json(conn, 200, resolved)
+              {:error, :unknown_identity} -> send_json(conn, 404, %{error: "unknown_identity"})
+              {:error, reason} -> send_json(conn, 502, %{error: "update_failed", detail: inspect(reason)})
+            end
+
+          {:error, :capability_denied} ->
+            send_json(conn, 403, %{error: "capability_denied"})
+        end
+    end
+  end
+
   get "/v1/bootstrap" do
     send_json(conn, 200, ConcreteRuntime.Bootstrap.status())
   end

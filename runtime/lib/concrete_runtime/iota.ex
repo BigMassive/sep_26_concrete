@@ -21,6 +21,21 @@ defmodule ConcreteRuntime.Iota do
     rpc("iota_getLatestCheckpointSequenceNumber", [])
   end
 
+  def chain_identifier do
+    rpc("iota_getChainIdentifier", [])
+  end
+
+  def get_object(object_id) when is_binary(object_id) do
+    case rpc("iota_getObject", [
+           object_id,
+           %{"showContent" => true, "showType" => true, "showOwner" => true}
+         ]) do
+      {:ok, %{"data" => data}} when is_map(data) -> {:ok, data}
+      {:ok, other} -> {:error, {:iota_object, other}}
+      err -> err
+    end
+  end
+
   defp rpc(method, params) do
     body = %{jsonrpc: "2.0", id: 1, method: method, params: params}
 

@@ -13,22 +13,31 @@ Replace (or dual-publish alongside) lab `did:concrete:lab:…` with on-ledger **
 | IOTA localnet (Compose) | done — beat 0 |
 | Checkpoint stamp on commits | done — metadata only |
 | Lab DID + IPFS DID document | frozen slice |
-| Identity Move package on localnet | **not yet** |
-| OTP create/resolve/update via Identity | **not yet** (`ConcreteRuntime.IotaIdentity`) |
+| Identity Move package on localnet | **done** — `./scripts/identity-publish.sh` → `lab/data/iota/identity_pkg_id.txt` |
+| OTP `Identity::new` + resolve | **done** — `/v1/identity`, `/v1/identity/resolve` |
+| Head CID on-chain in DID doc bytes | **pending** — head tracked in OTP `iota_heads.json` until SDK encode/update |
 
-## Intended steps
+## Lab commands
 
-1. **Publish Identity package** to the lab localnet (IOTA docs: [Local Network Setup](https://docs.iota.org/developer/iota-identity/getting-started/local-network-setup) — `publish_identity_package.sh` from `identity.rs`, export `IOTA_IDENTITY_PKG_ID`).
-2. Wire OTP (typed client or thin helper) to **create** Identity, **resolve** DID, **update** document service/field holding IPFS head CID — still behind the same capability check.
-3. Godot keeps talking only to OTP; plaque shows `did:iota:…` when available.
-4. Keep lab DID as fallback until resolve is proven; then deprecate in a follow-up.
+```bash
+./scripts/lab-up.sh
+./scripts/identity-publish.sh   # once per genesis (writes identity_pkg_id.txt)
+./scripts/node-up.sh            # loads IOTA_IDENTITY_PKG_ID automatically
+./scripts/identity-smoke.sh
+```
+
+Creating an info object while the package is configured also best-effort attaches an `iota_did` / `identity_object_id`.
 
 ## Probe
-
-With lab + node up:
 
 ```bash
 curl -s http://127.0.0.1:4000/v1/identity/status | python3 -m json.tool
 ```
 
-`package_configured` is true only when `IOTA_IDENTITY_PKG_ID` is set. `publish_ready` stays false until create/publish is implemented.
+`package_configured` / `publish_ready` should be true after publish + node restart.
+
+## Still open
+
+1. Encode a real DID document (with ContentHead service → IPFS CID) and `propose_update` / `execute_update` on-chain.
+2. Prefer a typed Identity client from BEAM (or labelled sidecar) over `iota client` in Docker for create.
+3. Godot plaque field for `iota_did`.

@@ -16,7 +16,7 @@ Slice acceptance criteria are **frozen** ([04-vertical-slice.md](04-vertical-sli
 |---------|--------|-------|
 | Blob / Tree / Commit content model | slice | Residue — core of the slice; stock IPFS (ADR 0002) |
 | Name → head (**DID**) | slice | Lab method `did:concrete:lab:` + IPFS DID doc frozen ([ADR 0006](decisions/0006-lab-did-until-iota-identity.md)) |
-| IOTA Identity publish (`did:iota:…` name → head) | **Phase 2 (active)** | Closes ADR 0002 gap; first post-freeze promotion |
+| IOTA Identity publish (`did:iota:…` name → head) | **Phase 2 (in progress)** | Package + create/resolve done; on-chain doc head update pending ([08](08-phase2-iota-identity.md)) |
 | One capability check on mutate | slice | Real check; bootstrap cap covers first slice (ADR 0005) |
 | Bootstrap capability (first user / first node) | slice | Do-anything/admin; auto-mint once (ADR 0005) |
 | Thin UI veneer (Godot) | slice | ADR 0001 — editor on host; project in-repo |

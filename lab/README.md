@@ -40,6 +40,22 @@ Status:
 
 `lab/data/` is gitignored.
 
-## OTP / Godot (later beats)
+## OTP / Godot
 
-Not started by `lab-up` yet. They will talk to these localhost ports when added.
+Not started by `lab-up`. Talk to localhost ports when added.
+
+```bash
+./scripts/node-up.sh
+./scripts/godot-up.sh
+```
+
+### Phase 2 — Identity package
+
+After lab IOTA is healthy, publish the Identity Move package once per genesis:
+
+```bash
+./scripts/identity-publish.sh   # → lab/data/iota/identity_pkg_id.txt
+./scripts/identity-smoke.sh     # with node-up running
+```
+
+See [docs/08-phase2-iota-identity.md](../docs/08-phase2-iota-identity.md).

@@ -18,7 +18,7 @@
 
 Promote backlog items deliberately (stub → slice). First promotion:
 
-1. **IOTA Identity publish** — replace/augment lab DID with on-ledger Identity name → head ([ADR 0002](decisions/0002-ipfs-iota-did.md), [ADR 0006](decisions/0006-lab-did-until-iota-identity.md))
+1. **IOTA Identity publish** — package on localnet + `Identity::new` / resolve done; on-chain DID-doc head update still open ([docs/08](08-phase2-iota-identity.md), [ADR 0006](decisions/0006-lab-did-until-iota-identity.md))
 2. Then pick deliberately: lab supervisor / god-view stub, second node belief, attenuation, RINA overlay packaging, …
 
 - Discard approaches that do not pay rent
