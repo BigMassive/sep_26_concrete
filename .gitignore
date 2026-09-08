@@ -1,0 +1,14 @@
+# sep_26_concrete
+
+*.swp
+.DS_Store
+.env
+.env.*
+!.env.example
+.idea/
+.vscode/
+_build/
+deps/
+node_modules/
+.elixir_ls/
+*.beam
