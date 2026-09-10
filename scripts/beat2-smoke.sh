@@ -84,4 +84,63 @@ python3 -m json.tool </tmp/eve_adv.json
 [[ "$CODE" == "403" ]] || { echo "expected 403 got $CODE"; exit 1; }
 
 echo
+echo "Publish directory data as King (ADR 0008)…"
+export KING EVE_ID BASE
+python3 - <<'PY'
+import json, os, urllib.error, urllib.parse, urllib.request
+
+base = os.environ["BASE"]
+king = os.environ["KING"]
+eve = os.environ["EVE_ID"]
+
+def post(path, body):
+    req = urllib.request.Request(
+        base + path,
+        data=json.dumps(body).encode(),
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(req) as resp:
+            return resp.status, json.load(resp)
+    except urllib.error.HTTPError as e:
+        return e.code, json.loads(e.read().decode())
+
+def get(path):
+    try:
+        with urllib.request.urlopen(base + path) as resp:
+            return resp.status, json.load(resp)
+    except urllib.error.HTTPError as e:
+        return e.code, json.loads(e.read().decode())
+
+st, king_rec = post("/v1/directory", {"principal_id": king, "username": "King"})
+assert st in (200, 201), (st, king_rec)
+assert king_rec.get("kind") == "data", king_rec
+assert king_rec.get("username") == "King", king_rec
+assert "parent_cid" not in king_rec, king_rec
+print("king directory", king_rec.get("did"), king_rec.get("kind"))
+
+st, eve_rec = post("/v1/directory", {"principal_id": king, "username": "Eve"})
+assert st in (200, 201), (st, eve_rec)
+assert eve_rec.get("username") == "Eve", eve_rec
+print("eve directory", eve_rec.get("did"))
+
+st, denied = post("/v1/directory", {"principal_id": eve, "username": "Eve"})
+assert st == 403, (st, denied)
+print("Eve directory publish denied")
+
+enc = urllib.parse.quote(king, safe="")
+st, listed = get(f"/v1/directory?principal_id={enc}")
+assert st == 200, (st, listed)
+assert listed.get("kind") == "data", listed
+assert len(listed.get("records", [])) >= 2, listed
+print("directory list", len(listed["records"]), "records")
+
+enc_eve = urllib.parse.quote(eve, safe="")
+st, listed_eve = get(f"/v1/directory?principal_id={enc_eve}")
+assert st == 403, (st, listed_eve)
+print("Eve directory list denied")
+PY
+
+echo
 echo "Beat 2 smoke OK."

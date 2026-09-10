@@ -41,8 +41,8 @@ The **person** is the ML-DSA-87 public key. That is not the same object as an in
 | **0** | This ADR + backlog/roadmap | done |
 | **1** | Sidecar: FIPS 202 seed, HKDF index 0, ML-DSA-87; export pubkey only | done |
 | **2** | OTP principals keyed by pubkey; King/Eve onboarding; cap holder = King’s pubkey | done |
-| **3** | IPFS **data** `{public_key, username}` + `did:iota` name; access = bootstrap cap only | later |
-| **4** | Godot: model external users; plaque/status use pubkey as actor id | later |
+| **3** | IPFS **data** `{public_key, username}` + `did:iota` name; access = bootstrap cap only | done |
+| **4** | Godot: model external users; plaque/status use pubkey as actor id | done |
 | **5** | Optional later: sign mutate requests; vault stand-in closer to seL4 | later |
 
 ## Consequences
@@ -50,4 +50,4 @@ The **person** is the ML-DSA-87 public key. That is not the same object as an in
 - Slice beats that send `principal_id` must switch to pubkey encoding once 2 lands.
 - Existing `lab/data/node/bootstrap.json` ids become leftovers (migrate or reset lab data).
 - Directory records are **data** (DID + IPFS bytes). They are **not** info objects and do not use plaque/advance/facet rights (ADR 0007 still applies to **information**).
-- Until stages 3–4 land, directory is not on IPFS yet; Godot still talks :4000 with pubkey as `principal_id`.
+- Godot lists directory people (truncated pubkey) and shows plaque author as the pubkey encoding. Directory HTTP is cap-checked; Eve cannot read or publish.

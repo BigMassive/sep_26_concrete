@@ -140,6 +140,80 @@ defmodule ConcreteRuntime.API do
     end
   end
 
+  get "/v1/directory" do
+    actor_id = conn.query_params["principal_id"]
+
+    cond do
+      not is_binary(actor_id) ->
+        send_json(conn, 400, %{error: "principal_id query param required"})
+
+      true ->
+        case ConcreteRuntime.UserDirectory.list(actor_id) do
+          {:ok, records} ->
+            send_json(conn, 200, %{kind: "data", records: records})
+
+          {:error, :capability_denied} ->
+            send_json(conn, 403, %{error: "capability_denied"})
+        end
+    end
+  end
+
+  get "/v1/directory/record" do
+    actor_id = conn.query_params["principal_id"]
+    did = conn.query_params["did"]
+
+    cond do
+      not is_binary(actor_id) or not is_binary(did) ->
+        send_json(conn, 400, %{error: "principal_id and did query params required"})
+
+      true ->
+        case ConcreteRuntime.UserDirectory.get(actor_id, did) do
+          {:ok, rec} ->
+            send_json(conn, 200, rec)
+
+          {:error, :capability_denied} ->
+            send_json(conn, 403, %{error: "capability_denied"})
+
+          {:error, :not_found} ->
+            send_json(conn, 404, %{error: "not_found"})
+
+          {:error, {:ipfs_unavailable, reason}} ->
+            send_json(conn, 503, %{error: "ipfs_unavailable", detail: inspect(reason)})
+
+          {:error, reason} ->
+            send_iota_or_generic_error(conn, reason)
+        end
+    end
+  end
+
+  post "/v1/directory" do
+    actor_id = conn.body_params["principal_id"]
+    username = conn.body_params["username"] || conn.body_params["display_name"]
+
+    cond do
+      not is_binary(actor_id) or not is_binary(username) or String.trim(username) == "" ->
+        send_json(conn, 400, %{error: "principal_id and username required"})
+
+      true ->
+        case ConcreteRuntime.UserDirectory.publish(actor_id, String.trim(username)) do
+          {:ok, rec} ->
+            send_json(conn, 201, rec)
+
+          {:error, :capability_denied} ->
+            send_json(conn, 403, %{error: "capability_denied"})
+
+          {:error, :unknown_principal} ->
+            send_json(conn, 404, %{error: "unknown_principal"})
+
+          {:error, {:ipfs_unavailable, reason}} ->
+            send_json(conn, 503, %{error: "ipfs_unavailable", detail: inspect(reason)})
+
+          {:error, reason} ->
+            send_iota_or_generic_error(conn, reason)
+        end
+    end
+  end
+
   post "/v1/capability/check" do
     principal_id = conn.body_params["principal_id"]
     action = conn.body_params["action"] || "mutate"

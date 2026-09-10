@@ -38,7 +38,7 @@ Certainty: treat this document as **Probable** programme shape unless marked oth
 - Produce **ML-DSA-87** keypairs; optionally blinded/wrapped with **ML-KEM** and an auditor public key.
 - Custody: physical bank, **seL4 vault** (volatile), and/or dongle-style device.
 - **Users never see raw keys.** Bosses/auditors may **remotely expunge** vault keys, not read them.
-- Prototype promotion: [ADR 0008](decisions/0008-user-crypto-identity.md) (**accepted**) — lab sidecar + Godot model; **public key as principal truth**; `{pubkey, username}` as **data** on IPFS with `did:iota`; bootstrap cap enables access. Vault and signatures later.
+- Prototype promotion: [ADR 0008](decisions/0008-user-crypto-identity.md) (**accepted**, stages **1–4** in lab) — sidecar + IPFS **data** directory + Godot people; **public key as principal truth**; `{pubkey, username}` named with `did:iota`; bootstrap cap enables access. Vault and signatures later.
 
 ## Identity, intent, mutual auth
 

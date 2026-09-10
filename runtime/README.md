@@ -34,6 +34,9 @@ Requires lab IPFS (`./scripts/lab-up.sh`). When the Identity package is configur
 | POST | `/v1/identity/head` | Cap-checked on-chain DID-doc update (`ContentHead` → IPFS CID) |
 | GET | `/v1/bootstrap` | Node, King, bootstrap cap, principals |
 | POST | `/v1/principals` | `{"display_name":"Eve"}` — extra user **without** bootstrap cap |
+| GET | `/v1/directory?principal_id=…` | User-directory **data** records (cap-checked) |
+| GET | `/v1/directory/record?principal_id=…&did=…` | Hydrate one directory blob from IPFS |
+| POST | `/v1/directory` | `{"principal_id","username"}` — publish `{pubkey, username}` to IPFS (cap-checked) |
 | POST | `/v1/capability/check` | `{"principal_id":"…","action":"mutate"}` — allow/deny |
 | GET | `/v1/info_objects` | List known objects |
 | GET | `/v1/info_object?did=…` | Current plaque (content + head) |

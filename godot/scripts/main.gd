@@ -6,6 +6,7 @@ const BASE := "http://127.0.0.1:4000"
 
 @onready var status_label: Label = %Status
 @onready var king_label: Label = %KingLabel
+@onready var people_label: RichTextLabel = %People
 @onready var content_input: LineEdit = %ContentInput
 @onready var plaque: RichTextLabel = %Plaque
 
@@ -110,6 +111,20 @@ func _on_http_completed(_result: int, code: int, _headers: PackedStringArray, bo
 			var king: Dictionary = b.get("king", {})
 			king_id = str(king.get("id", ""))
 			king_label.text = "King: %s (%s)" % [str(king.get("display_name", "?")), _short_principal(king_id)]
+			_http_post("/v1/directory", {"principal_id": king_id, "username": "King"}, "publish_king")
+		"publish_king":
+			if code == 503:
+				status_label.text = "Directory skipped (IPFS down)."
+			elif code == 403:
+				status_label.text = "Directory publish denied."
+			elif code >= 400:
+				status_label.text = "Directory publish failed (%s)." % code
+			_http_get("/v1/directory?principal_id=%s" % king_id.uri_encode(), "directory")
+		"directory":
+			if code == 403:
+				people_label.text = "[i]Directory denied (need bootstrap cap).[/i]"
+			elif typeof(parsed) == TYPE_DICTIONARY:
+				_render_people(parsed.get("records", []))
 			_http_get("/v1/info_objects", "list")
 		"list":
 			if typeof(parsed) != TYPE_DICTIONARY:
@@ -138,6 +153,12 @@ func _on_http_completed(_result: int, code: int, _headers: PackedStringArray, bo
 		"ensure_eve_then_advance":
 			if typeof(parsed) == TYPE_DICTIONARY:
 				eve_id = str(parsed.get("principal", {}).get("id", ""))
+			_http_post("/v1/directory", {"principal_id": king_id, "username": "Eve"}, "publish_eve_then_advance")
+		"publish_eve_then_advance":
+			_http_get("/v1/directory?principal_id=%s" % king_id.uri_encode(), "directory_then_eve_advance")
+		"directory_then_eve_advance":
+			if typeof(parsed) == TYPE_DICTIONARY:
+				_render_people(parsed.get("records", []))
 			_advance_as(eve_id, "advance_eve")
 		"advance_eve":
 			if code == 403:
@@ -161,10 +182,14 @@ func _apply_plaque(data: Variant) -> void:
 		return
 	var d: Dictionary = data
 	current_did = _primary_did(d)
-	plaque.text = "[b]DID[/b] %s\n[b]head[/b] %s\n[b]content[/b] %s\n[b]iota checkpoint[/b] %s\n[b]updated[/b] %s" % [
+	var author := _string_field(d, "updated_by")
+	if author == "—":
+		author = _string_field(d, "created_by")
+	plaque.text = "[b]DID[/b] %s\n[b]head[/b] %s\n[b]content[/b] %s\n[b]author[/b] %s\n[b]iota checkpoint[/b] %s\n[b]updated[/b] %s" % [
 		current_did,
 		str(d.get("head_cid", "")),
 		str(d.get("content", "")),
+		_short_principal(author),
 		str(d.get("iota_checkpoint", "")),
 		str(d.get("updated_at", ""))
 	]
@@ -175,6 +200,22 @@ func _primary_did(data: Dictionary) -> String:
 	if iota != "—":
 		return iota
 	return str(data.get("did", ""))
+
+
+func _render_people(records: Array) -> void:
+	if records.is_empty():
+		people_label.text = "[i]No directory records yet (data, not information).[/i]"
+		return
+	var lines: PackedStringArray = PackedStringArray()
+	for rec_any in records:
+		if typeof(rec_any) != TYPE_DICTIONARY:
+			continue
+		var rec: Dictionary = rec_any
+		var name := str(rec.get("username", "?"))
+		var pk := _short_principal(str(rec.get("public_key", "")))
+		var did := str(rec.get("did", ""))
+		lines.append("[b]%s[/b] %s\n  %s  ([i]data[/i])" % [name, pk, did])
+	people_label.text = "\n".join(lines)
 
 
 func _short_principal(id: String) -> String:

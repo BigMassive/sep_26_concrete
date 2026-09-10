@@ -66,6 +66,13 @@ text="King: —"
 layout_mode=2
 text="Refresh from backend"
 
+[node name="People" type="RichTextLabel" parent="Margin/VBox"]
+unique_name_in_owner=true
+layout_mode=2
+fit_content=true
+bbcode_enabled=true
+text="People: —"
+
 [node name="HSep2" type="HSeparator" parent="Margin/VBox"]
 layout_mode=2
 
