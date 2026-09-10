@@ -124,14 +124,19 @@ defmodule ConcreteRuntime.API do
         send_json(conn, 400, %{error: "display_name required"})
 
       true ->
-        {:ok, principal} = ConcreteRuntime.Bootstrap.ensure_principal(String.trim(name))
-        status = ConcreteRuntime.Bootstrap.status()
+        case ConcreteRuntime.Bootstrap.ensure_principal(String.trim(name)) do
+          {:ok, principal} ->
+            status = ConcreteRuntime.Bootstrap.status()
 
-        send_json(conn, 200, %{
-          principal: Map.take(principal, [:id, :display_name, :role]),
-          has_bootstrap_capability:
-            Enum.any?(status.principals, &(&1.id == principal.id and &1.has_bootstrap_capability))
-        })
+            send_json(conn, 200, %{
+              principal: Map.take(principal, [:id, :display_name, :role, :public_key]),
+              has_bootstrap_capability:
+                Enum.any?(status.principals, &(&1.id == principal.id and &1.has_bootstrap_capability))
+            })
+
+          {:error, reason} ->
+            send_json(conn, 502, %{error: "onboard_failed", detail: inspect(reason)})
+        end
     end
   end
 

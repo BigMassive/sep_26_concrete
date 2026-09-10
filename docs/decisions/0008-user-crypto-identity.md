@@ -19,7 +19,7 @@ The **person** is the ML-DSA-87 public key. That is not the same object as an in
 1. **Issuance is outside CONCRETE.** The node does not invent a user’s master seed. Lab may *simulate* an external issuer (sidecar) so Godot/OTP can run without a bank/dongle.
 2. **Master seed** is FIPS 202 material, issued **once** at onboarding. Product custody is a **seL4 vault in volatile memory**. Lab stand-in: sidecar process, seed not in Godot and not in `bootstrap.json`.
 3. **Derivation:** HKDF(master_seed, index) → ML-DSA-87 keypair. **Index 0** is reserved for the user’s main identity. Higher indices are pseudonyms (later).
-4. **Truth for “who”:** the **index-0 ML-DSA-87 public key** (stable encoding TBD in implementation). `display_name` / username is an alias, not the principal id. OTP `authorize` and commit `author_principal_id` should use the public key (or a unique encoding of it), not `principal-…`.
+4. **Truth for “who”:** the **index-0 ML-DSA-87 public key**, encoded as `mldsa87:` plus URL-safe Base64 (no padding) of the public-key bytes. `display_name` / username is an alias, not the principal id. OTP `authorize` and commit `author_principal_id` use that encoding, not `principal-…`.
 5. **Directory records are data, not information.** When a user is added, persist `{public_key, username}` on **IPFS** and name that blob with a **`did:iota:…`**. This is **data**: access is gated by **capability** (the bootstrap **anything/everywhere** cap covers it). Do **not** attach information machinery — no commit graph, no content/read/write/links facets, no per-object read/write rights. OTP may index DID → CID; the pair is not an info object and is not ADR 0007 head authority for plaques.
 6. **Godot** models people in the physical veneer (avatars, King/Eve) **with** crypto identity (show truncated pubkey). It still talks only to OTP HTTP ([ADR 0004](0004-world-state-supervisor.md)). It must not hold the master seed.
 7. **OTP sidecar** (labelled lab, or later seL4 vault) performs seed custody and HKDF/ML-DSA. The node runtime remains executor: cap check, IPFS directory write, HTTP for Godot.
@@ -39,8 +39,8 @@ The **person** is the ML-DSA-87 public key. That is not the same object as an in
 | Stage | Intent | Status |
 |-------|--------|--------|
 | **0** | This ADR + backlog/roadmap | done |
-| **1** | Sidecar: FIPS 202 seed, HKDF index 0, ML-DSA-87; export pubkey only | next |
-| **2** | OTP principals keyed by pubkey; King/Eve onboarding; cap holder = King’s pubkey | next |
+| **1** | Sidecar: FIPS 202 seed, HKDF index 0, ML-DSA-87; export pubkey only | done |
+| **2** | OTP principals keyed by pubkey; King/Eve onboarding; cap holder = King’s pubkey | done |
 | **3** | IPFS **data** `{public_key, username}` + `did:iota` name; access = bootstrap cap only | later |
 | **4** | Godot: model external users; plaque/status use pubkey as actor id | later |
 | **5** | Optional later: sign mutate requests; vault stand-in closer to seL4 | later |
@@ -50,4 +50,4 @@ The **person** is the ML-DSA-87 public key. That is not the same object as an in
 - Slice beats that send `principal_id` must switch to pubkey encoding once 2 lands.
 - Existing `lab/data/node/bootstrap.json` ids become leftovers (migrate or reset lab data).
 - Directory records are **data** (DID + IPFS bytes). They are **not** info objects and do not use plaque/advance/facet rights (ADR 0007 still applies to **information**).
-- Until 1–2 land, code still uses `principal-…` (gap named).
+- Until stages 3–4 land, directory is not on IPFS yet; Godot still talks :4000 with pubkey as `principal_id`.

@@ -7,6 +7,18 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 export CONCRETE_DATA_DIR="${CONCRETE_DATA_DIR:-${ROOT}/lab/data/node}"
 export CONCRETE_HTTP_PORT="${CONCRETE_HTTP_PORT:-4000}"
 
+export CONCRETE_VAULT_DIR="${CONCRETE_VAULT_DIR:-${ROOT}/lab/data/vault}"
+mkdir -p "${CONCRETE_VAULT_DIR}"
+
+VENV="${ROOT}/lab/.venv"
+REQ="${ROOT}/scripts/requirements-user-identity.txt"
+if [[ ! -x "${VENV}/bin/python" ]]; then
+  echo "Creating lab/.venv for ADR 0008 user-identity sidecar (dilithium-py)…"
+  python3 -m venv "${VENV}"
+  "${VENV}/bin/pip" install -q -r "${REQ}"
+fi
+export CONCRETE_USER_IDENTITY_PYTHON="${CONCRETE_USER_IDENTITY_PYTHON:-${VENV}/bin/python}"
+
 PKG_FILE="${ROOT}/lab/data/iota/identity_pkg_id.txt"
 if [[ -z "${IOTA_IDENTITY_PKG_ID:-}" && -f "${PKG_FILE}" ]]; then
   IOTA_IDENTITY_PKG_ID="$(tr -d '[:space:]' <"${PKG_FILE}")"

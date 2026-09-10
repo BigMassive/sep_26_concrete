@@ -4,7 +4,7 @@ Lab **node runtime** for `sep_26_concrete` — not Phoenix, not Godot. See [ADR 
 
 ## Beat 1 — bootstrap
 
-On first start (empty `lab/data/node/`), creates **node-1**, principal **King**, and the **bootstrap/do-anything** capability held by King.
+On first start (empty `lab/data/node/`), creates **node-1**, onboards **King** via the user-identity sidecar (ADR 0008: index-0 ML-DSA-87 **public key** is the principal id), and assigns the **bootstrap/do-anything** capability to that key.
 
 ```bash
 # Optional: lab IPFS/IOTA (needed from beat 2+)

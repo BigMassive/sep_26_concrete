@@ -109,7 +109,7 @@ func _on_http_completed(_result: int, code: int, _headers: PackedStringArray, bo
 			var b: Dictionary = parsed
 			var king: Dictionary = b.get("king", {})
 			king_id = str(king.get("id", ""))
-			king_label.text = "King: %s (%s)" % [str(king.get("display_name", "?")), king_id]
+			king_label.text = "King: %s (%s)" % [str(king.get("display_name", "?")), _short_principal(king_id)]
 			_http_get("/v1/info_objects", "list")
 		"list":
 			if typeof(parsed) != TYPE_DICTIONARY:
@@ -175,6 +175,12 @@ func _primary_did(data: Dictionary) -> String:
 	if iota != "—":
 		return iota
 	return str(data.get("did", ""))
+
+
+func _short_principal(id: String) -> String:
+	if id.length() <= 24:
+		return id
+	return "%s…%s" % [id.substr(0, 12), id.substr(id.length() - 8, 8)]
 
 
 func _string_field(data: Dictionary, key: String) -> String:

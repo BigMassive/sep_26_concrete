@@ -78,7 +78,7 @@ Slice acceptance criteria are **frozen** ([04-vertical-slice.md](04-vertical-sli
 |---------|--------|--------|---------|
 | User crypto identity (issuance may be external) | **slice** ([ADR 0008](decisions/0008-user-crypto-identity.md)) | Person = index-0 ML-DSA-87 pubkey; directory pair is **data** + `did:iota`; access = bootstrap cap | Caps, Godot, IPFS |
 | FIPS 202 → master seed; HKDF index (0=real, 1..=pseudonyms) | **stub** (0008; lab sidecar in stages 1–2) | Seed issued outside; vault later | ML-DSA |
-| ML-DSA-87 keypairs | **stub** (0008; lab sidecar in stages 1–2) | Index 0 = main identity; pubkey is truth | Auth, OTP `principal_id` |
+| ML-DSA-87 keypairs | **lab sidecar** (0008 stages 1–2) | Index 0 = main identity; pubkey is truth | Auth, OTP `principal_id` |
 | Optional ML-KEM wrap with auditor pubkey | paper | Auditor-mediated visibility | Audit |
 | Custody: bank / seL4 vault / dongle | paper (lab: OTP sidecar) | Product: seL4 vault, volatile | Vault |
 | Offline seL4 vault (volatile, sparse keys) | paper | Disconnected work | Keystore |

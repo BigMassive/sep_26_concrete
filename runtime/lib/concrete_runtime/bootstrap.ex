@@ -1,9 +1,10 @@
 defmodule ConcreteRuntime.Bootstrap do
   @moduledoc """
-  First working node + first user bootstrap (ADR 0005).
+  First working node + first user bootstrap (ADR 0005 / 0008).
 
-  On a fresh data dir, mints the bootstrap (do-anything) capability to the King
-  principal. Lab supervisor is not the capability holder — the user is.
+  On a fresh data dir, onboards King via the user-identity sidecar (index-0
+  ML-DSA-87 public key is the principal id) and mints the bootstrap
+  (do-anything) capability to that key. Lab supervisor is not the holder.
   """
   use GenServer
 
@@ -43,10 +44,15 @@ defmodule ConcreteRuntime.Bootstrap do
   def handle_call({:ensure_principal, display_name}, _from, %{state: state, path: path} = s) do
     case Enum.find(state.principals, &(&1.display_name == display_name)) do
       nil ->
-        principal = new_principal(display_name, king?: false)
-        state = %{state | principals: state.principals ++ [principal]}
-        persist!(path, state)
-        {:reply, {:ok, principal}, %{s | state: state}}
+        case new_principal(display_name, king?: false) do
+          {:ok, principal} ->
+            state = %{state | principals: state.principals ++ [principal]}
+            persist!(path, state)
+            {:reply, {:ok, principal}, %{s | state: state}}
+
+          {:error, _} = err ->
+            {:reply, err, s}
+        end
 
       existing ->
         {:reply, {:ok, existing}, s}
@@ -70,16 +76,17 @@ defmodule ConcreteRuntime.Bootstrap do
       |> File.read!()
       |> Jason.decode!()
       |> from_json()
+      |> maybe_upgrade_legacy_ids(path)
     else
-      state = fresh_bootstrap()
+      state = fresh_bootstrap!()
       persist!(path, state)
       state
     end
   end
 
-  defp fresh_bootstrap do
+  defp fresh_bootstrap! do
     node_id = "node-1"
-    king = new_principal("King", king?: true)
+    {:ok, king} = new_principal("King", king?: true)
     cap_id = "cap-bootstrap-#{short_id()}"
 
     %{
@@ -95,13 +102,59 @@ defmodule ConcreteRuntime.Bootstrap do
     }
   end
 
+  defp maybe_upgrade_legacy_ids(state, path) do
+    if Enum.any?(state.principals, &(not String.starts_with?(&1.id, "mldsa87:"))) do
+      upgraded =
+        Enum.map(state.principals, fn p ->
+          if String.starts_with?(p.id, "mldsa87:") do
+            p
+          else
+            case new_principal(p.display_name, king?: p.role == "king") do
+              {:ok, n} -> %{n | role: p.role, created_at: p.created_at}
+              {:error, reason} -> raise "ADR 0008 onboard failed for #{p.display_name}: #{inspect(reason)}"
+            end
+          end
+        end)
+
+      old_to_new =
+        state.principals
+        |> Enum.zip(upgraded)
+        |> Map.new(fn {old, new} -> {old.id, new.id} end)
+
+      king = Enum.find(upgraded, &(&1.role == "king"))
+
+      state = %{
+        state
+        | principals: upgraded,
+          bootstrap_holders: Enum.map(state.bootstrap_holders, &Map.get(old_to_new, &1, &1)),
+          bootstrap_capability: %{
+            state.bootstrap_capability
+            | holder_principal_id: king.id
+          }
+      }
+
+      persist!(path, state)
+      state
+    else
+      state
+    end
+  end
+
   defp new_principal(display_name, king?: king?) do
-    %{
-      id: "principal-#{short_id()}",
-      display_name: display_name,
-      role: if(king?, do: "king", else: "user"),
-      created_at: DateTime.utc_now() |> DateTime.to_iso8601()
-    }
+    case ConcreteRuntime.UserIdentity.onboard(display_name) do
+      {:ok, %{id: id, public_key: pk}} ->
+        {:ok,
+         %{
+           id: id,
+           public_key: pk,
+           display_name: display_name,
+           role: if(king?, do: "king", else: "user"),
+           created_at: DateTime.utc_now() |> DateTime.to_iso8601()
+         }}
+
+      {:error, _} = err ->
+        err
+    end
   end
 
   defp public_status(state) do
@@ -111,12 +164,12 @@ defmodule ConcreteRuntime.Bootstrap do
       harness_note: "OTP node ground truth — not Godot; supervisor is not the cap holder",
       node_id: state.node_id,
       created_at: state.created_at,
-      king: king && Map.take(king, [:id, :display_name, :role]),
+      king: king && Map.take(king, [:id, :display_name, :role, :public_key]),
       bootstrap_capability: state.bootstrap_capability,
       principals:
         Enum.map(state.principals, fn p ->
           Map.put(
-            Map.take(p, [:id, :display_name, :role]),
+            Map.take(p, [:id, :display_name, :role, :public_key]),
             :has_bootstrap_capability,
             p.id in state.bootstrap_holders
           )
@@ -139,6 +192,7 @@ defmodule ConcreteRuntime.Bootstrap do
             "id" => p.id,
             "display_name" => p.display_name,
             "role" => p.role,
+            "public_key" => Map.get(p, :public_key, p.id),
             "created_at" => p.created_at
           }
         end),
@@ -161,6 +215,7 @@ defmodule ConcreteRuntime.Bootstrap do
             id: p["id"],
             display_name: p["display_name"],
             role: p["role"],
+            public_key: p["public_key"] || p["id"],
             created_at: p["created_at"]
           }
         end),

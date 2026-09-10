@@ -24,7 +24,7 @@ Single place for terms used in this prototype. Prefer these spellings in docs an
 | **Funding / voucher** | Time-limited economic authority (King-issued within a CoT) required alongside capability for many mutations/maintenance. |
 | **Boss** | Role that mints or delegates capabilities (site term). Exact hierarchy (guards, …) is out of scope until modelled. |
 | **King** | Bootstrap / highest local authority persona — in this prototype, the **first user** who receives the bootstrap capability ([ADR 0005](decisions/0005-bootstrap-capability.md)). Also issues vouchers in the funding story (paper). |
-| **Principal** | The **person** acting on a node. **Truth:** index-0 **ML-DSA-87 public key** ([ADR 0008](decisions/0008-user-crypto-identity.md)). Lab leftover until 0008 stages 1–2: OTP `principal-…` id. Username is an alias. |
+| **Principal** | The **person** acting on a node. **Truth:** index-0 **ML-DSA-87 public key** ([ADR 0008](decisions/0008-user-crypto-identity.md)), encoded `mldsa87:…`. Username is an alias. |
 | **Master seed** | FIPS 202 secret issued **once**, **outside** the system; product custody = seL4 vault (volatile). HKDF(index) derives ML-DSA-87 keypairs; **index 0** = main identity. |
 | **Shared task object** | Ledger object: escrow for a task (incl. crowdfunding) plus refs to participant node journals. |
 | **Node journal** | Local (seL4) accounting of work done by a node for a task. |

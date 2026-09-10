@@ -25,7 +25,7 @@ Promote backlog items deliberately (stub → slice).
    - **B** — reads hydrate from on-chain ContentHead → IPFS
    - **C** — new objects are `did:iota:…` only (lab DID only if Identity is unconfigured)
    - **D** — OTP registry is an index (iota DID, ControllerCap id, label); not a second head
-3. **User cryptographic identity** — **accepted** ([ADR 0008](decisions/0008-user-crypto-identity.md)): seed issued outside; lab sidecar + Godot model; OTP uses ML-DSA-87 **public key** as principal truth; `{pubkey, username}` is **data** on IPFS with a `did:iota` name; access = bootstrap anything/everywhere (no info-object rights). Stages 1–2 next; 3–5 later.
+3. **User cryptographic identity** — **accepted** ([ADR 0008](decisions/0008-user-crypto-identity.md)): stages **1–2 done** (sidecar + pubkey principals). Stages 3–5 later (IPFS data directory, Godot polish, signatures/vault).
 4. Then pick deliberately: lab supervisor / god-view stub, second node belief, attenuation, RINA overlay packaging, …
 
 Do **not** couple this with: typed BEAM Identity SDK, HTTP auth, on-ledger bootstrap cap, deleting the OTP node, RINA.

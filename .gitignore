@@ -15,6 +15,9 @@ node_modules/
 
 # Lab harness local state (swarm key, IOTA genesis, IPFS repo, OTP state)
 lab/data/
+lab/.venv/
+__pycache__/
+*.pyc
 .tmp-iota/
 
 # Godot editor junk
