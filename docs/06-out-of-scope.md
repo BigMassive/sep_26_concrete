@@ -17,7 +17,7 @@ Documented as programme paper in [07-programme-map.md](07-programme-map.md) / [0
 - DWDM / photonics plant as a deliverable of this repo
 - National or production clock-sync / trilateration / sensor presence stack
 - Category-theoretic presence engine (manifolds, cohomology nullifiers, Heyting checkers)
-- Real FIPS 202 / HKDF / ML-DSA / ML-KEM / AES-GCM / TSS / MPC validator key ceremonies
+- Real FIPS 202 / HKDF / ML-DSA / ML-KEM / AES-GCM / TSS / MPC validator key ceremonies as **production** custody (lab **stand-in** of user seed + ML-DSA-87 is [ADR 0008](decisions/0008-user-crypto-identity.md); seL4 vault remains later)
 - Shared task object / node journal / settler economics and partition anti-overspend protocol
 - Dongles / physical banks as shipping accessories
 - Maths standards / full 4D ontological model as a shipping requirement

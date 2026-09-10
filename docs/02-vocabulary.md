@@ -10,7 +10,8 @@ Single place for terms used in this prototype. Prefer these spellings in docs an
 | **Mesh** | Set of nodes that can cooperate; no requirement for a privileged centre *as product architecture*. |
 | **Circle of trust (CoT)** | Organisation / authority domain that runs one CONCRETE network instance. Many CoTs may exist; some may nest. Not generic PKI “circle of trust” prose. |
 | **Info object** | Versioned information with a durable name and a content head (commit graph). |
-| **Data** | Content whose access is gated by capability (+ keystore); distinct from versioned **information** head semantics. |
+| **Data** | Content whose access is gated by **capability** (+ keystore in the product story); **no** information facets (content/read/write/links). Lab: bootstrap **anything/everywhere** cap covers access. Distinct from versioned **information**. |
+| **User directory** | **Data** records `{public_key, username}` on **IPFS**, named with **`did:iota:…`**. Not an info object; no read/write-rights machinery. Access = bootstrap cap ([ADR 0008](decisions/0008-user-crypto-identity.md)). |
 | **Commit / Tree / Blob** | Git-like content model: head commit points at trees; trees at blobs/CIDs. Facets include content, read, write, links (and related). |
 | **Name / head** | Stable **DID** that points at the current content CID. **Now:** IOTA Identity DID document ContentHead on stock IOTA when the package is configured ([ADR 0002](decisions/0002-ipfs-iota-did.md), [ADR 0007](decisions/0007-iota-did-head-authority.md)). Phase 1 leftover: lab DID + IPFS DID doc if Identity is unconfigured. |
 | **Ground truth** | Authoritative state; UI must not invent durable state. Name → head: **on-chain Identity**. Content bytes: **IPFS**. OTP: executor / cache / cap check; Godot talks only to OTP HTTP. |
@@ -23,6 +24,8 @@ Single place for terms used in this prototype. Prefer these spellings in docs an
 | **Funding / voucher** | Time-limited economic authority (King-issued within a CoT) required alongside capability for many mutations/maintenance. |
 | **Boss** | Role that mints or delegates capabilities (site term). Exact hierarchy (guards, …) is out of scope until modelled. |
 | **King** | Bootstrap / highest local authority persona — in this prototype, the **first user** who receives the bootstrap capability ([ADR 0005](decisions/0005-bootstrap-capability.md)). Also issues vouchers in the funding story (paper). |
+| **Principal** | The **person** acting on a node. **Truth:** index-0 **ML-DSA-87 public key** ([ADR 0008](decisions/0008-user-crypto-identity.md)). Lab leftover until 0008 stages 1–2: OTP `principal-…` id. Username is an alias. |
+| **Master seed** | FIPS 202 secret issued **once**, **outside** the system; product custody = seL4 vault (volatile). HKDF(index) derives ML-DSA-87 keypairs; **index 0** = main identity. |
 | **Shared task object** | Ledger object: escrow for a task (incl. crowdfunding) plus refs to participant node journals. |
 | **Node journal** | Local (seL4) accounting of work done by a node for a task. |
 | **Settler** | Component that reconciles journals against a shared task and performs settlement (e.g. IOTA PTB); may halt work when funds run out. Label as harness if privileged in a lab. |
