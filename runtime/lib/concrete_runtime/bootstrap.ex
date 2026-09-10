@@ -115,7 +115,11 @@ defmodule ConcreteRuntime.Bootstrap do
       bootstrap_capability: state.bootstrap_capability,
       principals:
         Enum.map(state.principals, fn p ->
-          Map.put(Map.take(p, [:id, :display_name, :role]), :has_bootstrap_capability, p.id in state.bootstrap_holders)
+          Map.put(
+            Map.take(p, [:id, :display_name, :role]),
+            :has_bootstrap_capability,
+            p.id in state.bootstrap_holders
+          )
         end)
     }
   end

@@ -30,7 +30,7 @@ Frozen: **2026-09-08** (owner sign-off via storyboard completion). Interim namin
 
 ## Status
 
-**Frozen.** Storyboard beats 0–6 done. Phase 1 slice path is demoable; further work is Phase 2 backlog promotion.
+**Frozen (Phase 1).** Storyboard beats 0–6 done on lab DID + OTP registry. Phase 2 naming: [ADR 0007](decisions/0007-iota-did-head-authority.md) — `did:iota:…` becomes head authority; that does **not** unfreeze or rewrite the Phase 1 acceptance list above.
 
 ## First-iteration storyboard
 

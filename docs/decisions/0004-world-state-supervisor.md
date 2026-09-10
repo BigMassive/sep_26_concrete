@@ -45,3 +45,4 @@ There is also a semantic split between **where a node actually is** and **where 
 - Vertical slice / scenarios should treat users-in-space and multiplayer as **UI**, with nodes as **working OTP entities**.
 - Vocabulary gains god-view vs belief; programme-map presence work can attach later without rewriting this split.
 - Residues against “supervisor as product mesh” remain: harness labelling is mandatory in demos and docs.
+- Godot still talks **only** to OTP HTTP. Name → head **authority** is IOTA Identity ([ADR 0007](0007-iota-did-head-authority.md)); OTP is the process Godot calls, not a second ledger for the head.

@@ -58,4 +58,4 @@ After lab IOTA is healthy, publish the Identity Move package once per genesis:
 ./scripts/identity-smoke.sh     # with node-up running
 ```
 
-See [docs/08-phase2-iota-identity.md](../docs/08-phase2-iota-identity.md).
+See [docs/08-phase2-iota-identity.md](../docs/08-phase2-iota-identity.md) and [ADR 0007](../docs/decisions/0007-iota-did-head-authority.md) (Identity as name → head authority; OTP executor).

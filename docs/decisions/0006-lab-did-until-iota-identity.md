@@ -1,6 +1,6 @@
 # ADR 0006: Interim lab DID method until IOTA Identity publish
 
-- Status: accepted
+- Status: superseded by [ADR 0007](0007-iota-did-head-authority.md) (2026-09-10) for new objects and head authority
 - Date: 2026-09-08
 
 ## Context
@@ -22,3 +22,5 @@ The frozen vertical slice proves name → head, IPFS commits, and one capability
 - Vertical slice can be marked **frozen** without claiming on-ledger Identity is done.
 - Backlog row “Name → head (DID)” stays **slice** for the proven path; add an explicit **Phase 2** row for IOTA Identity publish.
 - Open architecture item “bootstrap capability wire format” remains separate; lab JSON on disk is acceptable until caps move on-ledger with Identity.
+
+Phase 1 freeze remains a completed storyboard. Head authority and new-object naming after Identity publish: [ADR 0007](0007-iota-did-head-authority.md).

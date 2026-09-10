@@ -2,8 +2,11 @@ defmodule ConcreteRuntime.InfoObjects do
   @moduledoc """
   Named info objects: DID → IPFS commit head, gated by bootstrap capability.
 
-  DID method for the frozen slice: `did:concrete:lab:<id>` ([ADR 0006](../../docs/decisions/0006-lab-did-until-iota-identity.md)).
-  Phase 2: on-ledger IOTA Identity via `ConcreteRuntime.IotaIdentity`.
+  Stage A (ADR 0007): if the Identity package is configured, create/advance
+  must land the new head on-chain or fail. Stage B: GET hydrates from
+  Identity ContentHead → IPFS when the object has an iota DID; OTP
+  `head_cid` is cache only. Without a package / iota DID, keep the
+  Phase 1 lab DID path (`did:concrete:lab:<id>`).
   """
   use GenServer
 
@@ -12,14 +15,14 @@ defmodule ConcreteRuntime.InfoObjects do
   end
 
   def list, do: GenServer.call(__MODULE__, :list)
-  def get(did), do: GenServer.call(__MODULE__, {:get, did})
+  def get(did), do: GenServer.call(__MODULE__, {:get, did}, 30_000)
 
   def create(principal_id, content, opts \\ []) do
-    GenServer.call(__MODULE__, {:create, principal_id, content, opts}, 30_000)
+    GenServer.call(__MODULE__, {:create, principal_id, content, opts}, 60_000)
   end
 
   def advance(principal_id, did, content, opts \\ []) do
-    GenServer.call(__MODULE__, {:advance, principal_id, did, content, opts}, 30_000)
+    GenServer.call(__MODULE__, {:advance, principal_id, did, content, opts}, 60_000)
   end
 
   @impl true
@@ -53,11 +56,15 @@ defmodule ConcreteRuntime.InfoObjects do
          :ok <- require_ipfs(),
          {:ok, checkpoint} <- optional_iota_checkpoint(),
          {:ok, obj} <- build_new(principal_id, content, opts, checkpoint),
-         {:ok, obj} <- maybe_attach_iota_identity(obj) do
+         {:ok, obj} <- attach_iota_identity(obj) do
       objects = s.objects ++ [obj]
       persist!(s.path, objects)
-      {:ok, public} = hydrate(obj)
-      {:reply, {:ok, public}, %{s | objects: objects}}
+      state = %{s | objects: objects}
+
+      case hydrate(obj) do
+        {:ok, public} -> {:reply, {:ok, public}, state}
+        {:error, _} = err -> {:reply, err, state}
+      end
     else
       {:error, :capability_denied} = err ->
         {:reply, err, s}
@@ -73,11 +80,15 @@ defmodule ConcreteRuntime.InfoObjects do
          obj when not is_nil(obj) <- Enum.find(s.objects, &(&1.did == did)),
          {:ok, checkpoint} <- optional_iota_checkpoint(),
          {:ok, updated} <- build_advance(obj, principal_id, content, opts, checkpoint),
-         {:ok, updated} <- maybe_sync_iota_head(updated) do
+         {:ok, updated} <- sync_iota_head(updated) do
       objects = Enum.map(s.objects, fn o -> if o.did == did, do: updated, else: o end)
       persist!(s.path, objects)
-      {:ok, public} = hydrate(updated)
-      {:reply, {:ok, public}, %{s | objects: objects}}
+      state = %{s | objects: objects}
+
+      case hydrate(updated) do
+        {:ok, public} -> {:reply, {:ok, public}, state}
+        {:error, _} = err -> {:reply, err, state}
+      end
     else
       nil ->
         {:reply, {:error, :not_found}, s}
@@ -181,14 +192,15 @@ defmodule ConcreteRuntime.InfoObjects do
   end
 
   defp hydrate(obj) do
-    with {:ok, commit} <- ConcreteRuntime.IPFS.cat_json(obj.head_cid),
+    with {:ok, head_cid, head_source} <- head_for_read(obj),
+         {:ok, commit} <- ConcreteRuntime.IPFS.cat_json(head_cid),
          {:ok, blob} <- ConcreteRuntime.IPFS.cat_json(commit["content_cid"]) do
       {:ok,
        %{
          did: obj.did,
          label: obj.label,
-         head_cid: obj.head_cid,
-         content_cid: obj.content_cid,
+         head_cid: head_cid,
+         content_cid: commit["content_cid"],
          did_doc_cid: obj.did_doc_cid,
          content: blob["text"],
          commit_message: commit["message"],
@@ -199,8 +211,29 @@ defmodule ConcreteRuntime.InfoObjects do
          updated_at: obj.updated_at,
          iota_checkpoint: obj.iota_checkpoint,
          iota_did: Map.get(obj, :iota_did),
-         identity_object_id: Map.get(obj, :identity_object_id)
+         identity_object_id: Map.get(obj, :identity_object_id),
+         head_source: head_source
        }}
+    end
+  end
+
+  @doc false
+  def head_for_read(obj) do
+    case Map.get(obj, :iota_did) do
+      did when is_binary(did) and did != "" ->
+        case identity_mod().resolve(did) do
+          {:ok, resolved} ->
+            case ConcreteRuntime.IotaIdentity.on_chain_head_cid(resolved) do
+              {:ok, cid} -> {:ok, cid, "on_chain"}
+              {:error, _} = err -> err
+            end
+
+          {:error, reason} ->
+            {:error, {:iota_resolve_failed, reason}}
+        end
+
+      _ ->
+        {:ok, obj.head_cid, "otp_registry"}
     end
   end
 
@@ -221,42 +254,56 @@ defmodule ConcreteRuntime.InfoObjects do
     ])
   end
 
-  defp maybe_attach_iota_identity(obj) do
-    case ConcreteRuntime.IotaIdentity.package_id() do
-      id when is_binary(id) and id != "" ->
-        case ConcreteRuntime.IotaIdentity.create_and_publish() do
-          {:ok, %{did: iota_did, identity_object_id: oid}} ->
-            _ = ConcreteRuntime.IotaIdentity.update_head(iota_did, obj.head_cid)
+  @doc false
+  def attach_iota_identity(obj) do
+    mod = identity_mod()
 
+    if mod.configured?() do
+      case mod.create_and_publish(head_cid: obj.head_cid) do
+        {:ok, %{did: iota_did, identity_object_id: oid}} ->
+          with :ok <- mod.require_on_chain_head(iota_did, obj.head_cid) do
             {:ok,
              Map.merge(obj, %{
                iota_did: iota_did,
                identity_object_id: oid
              })}
+          end
 
-          {:error, reason} ->
-            # Lab Identity is best-effort; do not fail the frozen lab DID path.
-            require Logger
-            Logger.warning("iota identity attach skipped: #{inspect(reason)}")
-            {:ok, obj}
-        end
-
-      _ ->
-        {:ok, obj}
+        {:error, reason} ->
+          {:error, {:iota_identity_create_failed, reason}}
+      end
+    else
+      {:ok, obj}
     end
   end
 
-  defp maybe_sync_iota_head(obj) do
-    case Map.get(obj, :iota_did) do
-      did when is_binary(did) and did != "" ->
-        case ConcreteRuntime.IotaIdentity.update_head(did, obj.head_cid) do
-          {:ok, _} -> {:ok, obj}
-          {:error, _} -> {:ok, obj}
-        end
+  @doc false
+  def sync_iota_head(obj) do
+    mod = identity_mod()
 
-      _ ->
-        {:ok, obj}
+    if mod.configured?() do
+      case Map.get(obj, :iota_did) do
+        did when is_binary(did) and did != "" ->
+          case mod.update_head(did, obj.head_cid) do
+            {:ok, resolved} ->
+              with :ok <- ConcreteRuntime.IotaIdentity.match_on_chain_head(resolved, obj.head_cid) do
+                {:ok, obj}
+              end
+
+            {:error, reason} ->
+              {:error, {:iota_identity_update_failed, reason}}
+          end
+
+        _ ->
+          {:error, :iota_did_missing}
+      end
+    else
+      {:ok, obj}
     end
+  end
+
+  defp identity_mod do
+    Application.get_env(:concrete_runtime, :iota_identity, ConcreteRuntime.IotaIdentity)
   end
 
   defp require_ipfs do

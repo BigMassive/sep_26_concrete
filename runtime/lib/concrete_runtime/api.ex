@@ -4,11 +4,11 @@ defmodule ConcreteRuntime.API do
   """
   use Plug.Router
 
-  plug Plug.Logger
-  plug :match
-  plug :fetch_query_params
-  plug Plug.Parsers, parsers: [:json], json_decoder: Jason
-  plug :dispatch
+  plug(Plug.Logger)
+  plug(:match)
+  plug(:fetch_query_params)
+  plug(Plug.Parsers, parsers: [:json], json_decoder: Jason)
+  plug(:dispatch)
 
   get "/health" do
     ipfs = ConcreteRuntime.IPFS.ping()
@@ -31,6 +31,7 @@ defmodule ConcreteRuntime.API do
 
   post "/v1/identity" do
     principal_id = conn.body_params["principal_id"]
+    head_cid = conn.body_params["head_cid"]
 
     cond do
       not is_binary(principal_id) ->
@@ -39,7 +40,9 @@ defmodule ConcreteRuntime.API do
       true ->
         case ConcreteRuntime.Bootstrap.authorize(principal_id, "mutate") do
           {:ok, _, _} ->
-            case ConcreteRuntime.IotaIdentity.create_and_publish() do
+            opts = if is_binary(head_cid) and head_cid != "", do: [head_cid: head_cid], else: []
+
+            case ConcreteRuntime.IotaIdentity.create_and_publish(opts) do
               {:ok, created} ->
                 send_json(conn, 201, created)
 
@@ -65,9 +68,14 @@ defmodule ConcreteRuntime.API do
 
       true ->
         case ConcreteRuntime.IotaIdentity.resolve(did) do
-          {:ok, resolved} -> send_json(conn, 200, resolved)
-          {:error, :bad_did} -> send_json(conn, 400, %{error: "bad_did"})
-          {:error, reason} -> send_json(conn, 502, %{error: "resolve_failed", detail: inspect(reason)})
+          {:ok, resolved} ->
+            send_json(conn, 200, resolved)
+
+          {:error, :bad_did} ->
+            send_json(conn, 400, %{error: "bad_did"})
+
+          {:error, reason} ->
+            send_json(conn, 502, %{error: "resolve_failed", detail: inspect(reason)})
         end
     end
   end
@@ -85,9 +93,17 @@ defmodule ConcreteRuntime.API do
         case ConcreteRuntime.Bootstrap.authorize(principal_id, "mutate") do
           {:ok, _, _} ->
             case ConcreteRuntime.IotaIdentity.update_head(did, head_cid) do
-              {:ok, resolved} -> send_json(conn, 200, resolved)
-              {:error, :unknown_identity} -> send_json(conn, 404, %{error: "unknown_identity"})
-              {:error, reason} -> send_json(conn, 502, %{error: "update_failed", detail: inspect(reason)})
+              {:ok, resolved} ->
+                send_json(conn, 200, resolved)
+
+              {:error, :unknown_identity} ->
+                send_json(conn, 404, %{error: "unknown_identity"})
+
+              {:error, :missing_controller_cap} ->
+                send_json(conn, 409, %{error: "missing_controller_cap"})
+
+              {:error, reason} ->
+                send_json(conn, 502, %{error: "update_failed", detail: inspect(reason)})
             end
 
           {:error, :capability_denied} ->
@@ -153,7 +169,7 @@ defmodule ConcreteRuntime.API do
         case ConcreteRuntime.InfoObjects.get(did) do
           {:ok, obj} -> send_json(conn, 200, obj)
           {:error, :not_found} -> send_json(conn, 404, %{error: "not_found"})
-          {:error, reason} -> send_json(conn, 502, %{error: inspect(reason)})
+          {:error, reason} -> send_iota_or_generic_error(conn, reason)
         end
     end
   end
@@ -181,7 +197,7 @@ defmodule ConcreteRuntime.API do
             send_json(conn, 503, %{error: "ipfs_unavailable", detail: inspect(reason)})
 
           {:error, reason} ->
-            send_json(conn, 500, %{error: inspect(reason)})
+            send_iota_or_generic_error(conn, reason)
         end
     end
   end
@@ -213,13 +229,45 @@ defmodule ConcreteRuntime.API do
             send_json(conn, 503, %{error: "ipfs_unavailable", detail: inspect(reason)})
 
           {:error, reason} ->
-            send_json(conn, 500, %{error: inspect(reason)})
+            send_iota_or_generic_error(conn, reason)
         end
     end
   end
 
   match _ do
     send_json(conn, 404, %{error: "not_found"})
+  end
+
+  defp send_iota_or_generic_error(conn, reason) do
+    case reason do
+      {:iota_identity_create_failed, detail} ->
+        send_json(conn, 502, %{error: "iota_identity_create_failed", detail: inspect(detail)})
+
+      {:iota_identity_update_failed, detail} ->
+        send_json(conn, 502, %{error: "iota_identity_update_failed", detail: inspect(detail)})
+
+      :iota_did_missing ->
+        send_json(conn, 409, %{error: "iota_did_missing"})
+
+      {:iota_head_mismatch, expected, got} ->
+        send_json(conn, 502, %{
+          error: "iota_head_mismatch",
+          expected: expected,
+          got: inspect(got)
+        })
+
+      {:iota_head_not_on_chain, source} ->
+        send_json(conn, 502, %{error: "iota_head_not_on_chain", source: source})
+
+      :iota_head_unconfirmed ->
+        send_json(conn, 502, %{error: "iota_head_unconfirmed"})
+
+      {:iota_resolve_failed, detail} ->
+        send_json(conn, 502, %{error: "iota_resolve_failed", detail: inspect(detail)})
+
+      other ->
+        send_json(conn, 500, %{error: inspect(other)})
+    end
   end
 
   defp send_json(conn, status, body) do

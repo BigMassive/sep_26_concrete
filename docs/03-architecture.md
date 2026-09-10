@@ -19,7 +19,7 @@ Working architecture for `sep_26_concrete`. This is **not** a restatement of the
 - **UI** — **Godot** physical-world veneer only; no Phoenix ([ADR 0001](decisions/0001-lab-toolchain.md), [ADR 0004](decisions/0004-world-state-supervisor.md)).
 - **Node runtime** — **Elixir / OTP (BEAM)** for orchestration ([ADR 0003](decisions/0003-runtime-beam.md)); TCP/IP under the hood now, RINA overlay later.
 - **Content store** — content-addressed Blob / Tree / Commit graph on **stock IPFS** (lab stand-in; [ADR 0002](decisions/0002-ipfs-iota-did.md)).
-- **Naming + authority** — durable **DID** → head (IOTA Identity on **stock IOTA**); gated mutation ([ADR 0002](decisions/0002-ipfs-iota-did.md)).
+- **Naming + authority** — durable **DID** → head: **IOTA Identity** on stock IOTA is head authority ([ADR 0007](decisions/0007-iota-did-head-authority.md)); OTP orchestrates and checks the bootstrap cap ([ADR 0005](decisions/0005-bootstrap-capability.md)). Content bytes on IPFS ([ADR 0002](decisions/0002-ipfs-iota-did.md)).
 
 ## Lab vs product topology
 
@@ -51,10 +51,11 @@ Record choices under `docs/decisions/` before coding:
 - [x] Lab supervisor → **yes, labelled harness**; seed + god-view; not live cap/commit authority ([ADR 0004](decisions/0004-world-state-supervisor.md))
 - [ ] RINA overlay packaging (later in this prototype; [ADR 0002](decisions/0002-ipfs-iota-did.md))
 - [x] BEAM app shape for UI → **OTP without Phoenix**; Godot only ([ADR 0004](decisions/0004-world-state-supervisor.md))
-- [x] Interim naming for frozen slice → **lab DID + IPFS DID doc**; IOTA Identity = Phase 2 ([ADR 0006](decisions/0006-lab-did-until-iota-identity.md))
-- [ ] Exact OTP process layout (evolve with Phase 2)
+- [x] Interim naming for frozen slice → **lab DID + IPFS DID doc** ([ADR 0006](decisions/0006-lab-did-until-iota-identity.md)); superseded for new objects by 0007
+- [x] Name → head authority after Identity → **on-chain Identity DID doc**; OTP executor / cache ([ADR 0007](decisions/0007-iota-did-head-authority.md))
+- [ ] Exact OTP process layout (index vs GenServer after 0007 D)
 - [ ] Bootstrap capability wire format (Move / DID-linked / …) when caps move on-ledger with Identity
-- [ ] IOTA Identity create / resolve / update-head on localnet (Phase 2 active)
+- [ ] Typed Identity client from BEAM (harness CLI/PTB remains until this pays rent)
 
 ## Programme map vs this prototype
 

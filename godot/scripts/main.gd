@@ -161,10 +161,18 @@ func _apply_plaque(data: Variant) -> void:
 		return
 	var d: Dictionary = data
 	current_did = str(d.get("did", current_did))
-	plaque.text = "[b]DID[/b] %s\n[b]head[/b] %s\n[b]content[/b] %s\n[b]iota checkpoint[/b] %s\n[b]updated[/b] %s" % [
+	plaque.text = "[b]DID[/b] %s\n[b]iota DID[/b] %s\n[b]head[/b] %s\n[b]content[/b] %s\n[b]iota checkpoint[/b] %s\n[b]updated[/b] %s" % [
 		current_did,
+		_string_field(d, "iota_did"),
 		str(d.get("head_cid", "")),
 		str(d.get("content", "")),
 		str(d.get("iota_checkpoint", "")),
 		str(d.get("updated_at", ""))
 	]
+
+
+func _string_field(data: Dictionary, key: String) -> String:
+	var raw: Variant = data.get(key, "")
+	if typeof(raw) == TYPE_STRING and not str(raw).is_empty():
+		return str(raw)
+	return "—"

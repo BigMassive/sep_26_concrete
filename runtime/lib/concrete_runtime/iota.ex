@@ -1,7 +1,8 @@
 defmodule ConcreteRuntime.Iota do
   @moduledoc """
   Lab IOTA localnet client (ADR 0002). Beat 2 records an RPC checkpoint anchor
-  alongside DID/IPFS; full IOTA Identity document publish can harden later.
+  alongside DID/IPFS; Phase 2 Identity document publish lives in
+  `ConcreteRuntime.IotaIdentity`.
   """
 
   @default_rpc "http://127.0.0.1:9000"

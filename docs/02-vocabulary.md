@@ -12,7 +12,8 @@ Single place for terms used in this prototype. Prefer these spellings in docs an
 | **Info object** | Versioned information with a durable name and a content head (commit graph). |
 | **Data** | Content whose access is gated by capability (+ keystore); distinct from versioned **information** head semantics. |
 | **Commit / Tree / Blob** | Git-like content model: head commit points at trees; trees at blobs/CIDs. Facets include content, read, write, links (and related). |
-| **Name / head** | Stable **DID** that points at the current content CID (IOTA Identity on stock IOTA in the lab — [ADR 0002](decisions/0002-ipfs-iota-did.md)). |
+| **Name / head** | Stable **DID** that points at the current content CID. Phase 1 used lab DID + IPFS DID doc. **Target:** IOTA Identity DID document ContentHead on stock IOTA ([ADR 0002](decisions/0002-ipfs-iota-did.md), [ADR 0007](decisions/0007-iota-did-head-authority.md)). |
+| **Ground truth** | Authoritative state; UI must not invent durable state. Name → head: **on-chain Identity**. Content bytes: **IPFS**. OTP: executor / cache / cap check; Godot talks only to OTP HTTP. |
 | **IINL** | Legacy Mar_25/26 IOTA IPFS name-link object. **Not** the naming path for this prototype (DID instead). |
 | **DID** | Decentralised identifier; naming from the start, including for a CoT’s IOTA when needed. |
 | **K_DAG** | Symmetric key material for an encrypted IPFS DAG of a named object; derived per name from CoT master via HKDF in the programme map. |
@@ -29,7 +30,6 @@ Single place for terms used in this prototype. Prefer these spellings in docs an
 | **RINA** | Recursive InterNetwork Architecture — programme networking narrative; lab introduces it as an **overlay later**, after TCP/IP IPFS/IOTA (ADR 0002). |
 | **Vault / keystore** | seL4 (or stand-in) component holding keys in volatile memory; users do not see raw keys; remote expunge possible for bosses/auditors. |
 | **α / β / ω** | Local likelihood, confidence, and weight of evidence for identity/presence — matched to capability identity thresholds (paper). |
-| **Ground truth** | Authoritative state of the system; UI must not invent durable state. |
 | **Vertical slice** | One end-to-end user-visible path implemented through all layers that matter for that path. |
 | **Slice / stub / paper** | Triage for concepts: implement now / placeholder interface / document only. |
 | **Residue** | Idea or pattern kept from a discarded prototype. |

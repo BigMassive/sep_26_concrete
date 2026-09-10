@@ -15,8 +15,8 @@ Slice acceptance criteria are **frozen** ([04-vertical-slice.md](04-vertical-sli
 | Concept | Status | Notes |
 |---------|--------|-------|
 | Blob / Tree / Commit content model | slice | Residue — core of the slice; stock IPFS (ADR 0002) |
-| Name → head (**DID**) | slice | Lab method `did:concrete:lab:` + IPFS DID doc frozen ([ADR 0006](decisions/0006-lab-did-until-iota-identity.md)) |
-| IOTA Identity publish (`did:iota:…` name → head) | **Phase 2 (in progress)** | Package + create/resolve done; on-chain doc head update pending ([08](08-phase2-iota-identity.md)) |
+| Name → head (**DID**) | slice / Phase 2 | Phase 1: lab `did:concrete:lab:` + IPFS DID doc ([ADR 0006](decisions/0006-lab-did-until-iota-identity.md)). Target: `did:iota:…` ContentHead is head authority ([ADR 0007](decisions/0007-iota-did-head-authority.md)) |
+| IOTA Identity publish (`did:iota:…` name → head) | **Phase 2 (next: A–D)** | Happy-path on-chain ContentHead done; sole SoT + iota-only names planned ([08](08-phase2-iota-identity.md), [ADR 0007](decisions/0007-iota-did-head-authority.md)) |
 | One capability check on mutate | slice | Real check; bootstrap cap covers first slice (ADR 0005) |
 | Bootstrap capability (first user / first node) | slice | Do-anything/admin; auto-mint once (ADR 0005) |
 | Thin UI veneer (Godot) | slice | ADR 0001 — editor on host; project in-repo |
@@ -113,7 +113,7 @@ Slice acceptance criteria are **frozen** ([04-vertical-slice.md](04-vertical-sli
 | Concept | Status | Intent | Touches |
 |---------|--------|--------|---------|
 | Data and information on IPFS (AES-256-GCM DAG) | paper | Confidential content plane | Content store |
-| DID preferred over IINL; DID for CoT IOTA | slice / Phase 2 | Lab DID frozen ([ADR 0006](decisions/0006-lab-did-until-iota-identity.md)); Identity publish active | Name → head |
+| DID preferred over IINL; DID for CoT IOTA | slice / Phase 2 | Lab DID frozen as Phase 1 storyboard ([ADR 0006](decisions/0006-lab-did-until-iota-identity.md)); head authority → Identity ([ADR 0007](decisions/0007-iota-did-head-authority.md)) | Name → head |
 | C_aud + ML-KEM-1024 → auditor recovers K_DAG | paper | Auditor path into encrypted DAGs | IINL/DID |
 | Data access: vault/keystore + capability | paper | Simpler gate for data | Caps |
 | Information access: K_DAG + head + permission then crypto | paper | Mar_25/26 information path | Keystore |

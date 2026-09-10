@@ -14,7 +14,7 @@ Project CONCRETE seeks minimal digital foundations that people and organisations
 
 ## Principles for this repo
 
-1. **Backend is ground truth** — any UI is a thin veneer; durable state lives in the foundation path.
+1. **Backend is ground truth** — any UI is a thin veneer. For **name → head**, that backend is **IOTA Identity** plus **IPFS** content ([ADR 0007](decisions/0007-iota-did-head-authority.md)); OTP orchestrates and is not a second ledger for the head.
 2. **Docs before platform** — no four-container-per-node default until the slice needs it.
 3. **One capability path** — at least one real “nothing without authority” check on the critical path, or call the capability story paper.
 4. **Small vocabulary, shared meanings** — see [02-vocabulary.md](02-vocabulary.md).
