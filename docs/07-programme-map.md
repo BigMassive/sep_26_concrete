@@ -39,6 +39,7 @@ Certainty: treat this document as **Probable** programme shape unless marked oth
 - Custody: physical bank, **seL4 vault** (volatile), and/or dongle-style device.
 - **Users never see raw keys.** Bosses/auditors may **remotely expunge** vault keys, not read them.
 - Prototype promotion: [ADR 0008](decisions/0008-user-crypto-identity.md) (**accepted**, stages **1–4** in lab) — sidecar + IPFS **data** directory + Godot people; **public key as principal truth**; `{pubkey, username}` named with `did:iota`; bootstrap cap enables access. Vault and signatures later.
+- Physical veneer as the long-term **user actuator**: [ADR 0009](decisions/0009-godot-scenario-worlds.md) — 3D room + session host, node console, scenario worlds, headless bot peers. Belief overlay later. See [09](09-godot-scenario-worlds.md).
 
 ## Identity, intent, mutual auth
 

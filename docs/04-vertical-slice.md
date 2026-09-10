@@ -51,7 +51,7 @@ Godot physical veneer + OTP nodes ([ADR 0001](decisions/0001-lab-toolchain.md), 
 - Actors: **King** (first user on first node, holds bootstrap capability); a second user without that cap; working OTP node(s); optional labelled lab supervisor
 - Happy path: King creates/advances an info object (DID → IPFS head); capability check passes; Godot refreshes from OTP
 - Failure path (capability denied): second user attempts the same mutate → fail closed; Godot shows backend denial, not a local success
-- Note: Godot may later show **god-view** vs **node belief** markers; not required for this freeze
+- Note: Godot may later overlay **node belief** on the world; not required for this freeze. 3D rooms / node console / bot peers are [ADR 0009](decisions/0009-godot-scenario-worlds.md), not Phase 1 acceptance.
 
 ### Beat 0 — lab up
 

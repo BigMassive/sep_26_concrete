@@ -26,5 +26,6 @@ Suggested template:
 | [0005](0005-bootstrap-capability.md) | Bootstrap capability — first user on first node | accepted |
 | [0006](0006-lab-did-until-iota-identity.md) | Interim lab DID until IOTA Identity publish | superseded by 0007 |
 | [0008](0008-user-crypto-identity.md) | User cryptographic identity — external seed; ML-DSA-87 pubkey as truth | accepted |
+| [0009](0009-godot-scenario-worlds.md) | Godot scenario worlds — first-person veneer, node console, playbook bots | accepted |
 
 Further open questions are listed in [03-architecture.md](../03-architecture.md).

@@ -49,6 +49,7 @@ Record choices under `docs/decisions/` before coding:
 - [x] Naming → **DID** via IOTA Identity on stock IOTA ([ADR 0002](decisions/0002-ipfs-iota-did.md))
 - [x] How the first capability is represented and checked → **bootstrap cap to first user on first node** (do-anything; [ADR 0005](decisions/0005-bootstrap-capability.md))
 - [x] Lab supervisor → **yes, labelled harness**; seed + god-view; not live cap/commit authority ([ADR 0004](decisions/0004-world-state-supervisor.md))
+- [x] Godot scenario worlds / node console / playbook bots → **accepted** ([ADR 0009](decisions/0009-godot-scenario-worlds.md); plan [09](09-godot-scenario-worlds.md); stages 1–4 brief [10](10-godot-stage1-build.md); belief overlay later)
 - [ ] RINA overlay packaging (later in this prototype; [ADR 0002](decisions/0002-ipfs-iota-did.md))
 - [x] BEAM app shape for UI → **OTP without Phoenix**; Godot only ([ADR 0004](decisions/0004-world-state-supervisor.md))
 - [x] Interim naming for frozen slice → **lab DID + IPFS DID doc** ([ADR 0006](decisions/0006-lab-did-until-iota-identity.md)); superseded for new objects by 0007

@@ -26,6 +26,7 @@ Documented as programme paper in [07-programme-map.md](07-programme-map.md) / [0
 - Formal UK TOP SECRET (or allied) accreditation of this repository’s code
 - **IINL-first naming** (this prototype uses **DIDs** from the start — ADR 0002)
 - Treating **stock IPFS / stock IOTA** as the production CONCRETE fabric (lab stand-ins only)
+- Hardware / hypervisor **KVM** of a real OS on the laptop prop (lab **node console** is a nested Godot OTP client — [ADR 0009](decisions/0009-godot-scenario-worlds.md))
 
 ## Prior prototype platform habits
 

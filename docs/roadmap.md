@@ -26,9 +26,10 @@ Promote backlog items deliberately (stub → slice).
    - **C** — new objects are `did:iota:…` only (lab DID only if Identity is unconfigured)
    - **D** — OTP registry is an index (iota DID, ControllerCap id, label); not a second head
 3. **User cryptographic identity** — **accepted** ([ADR 0008](decisions/0008-user-crypto-identity.md)): stages **1–4 done**. Stage 5 later (signed mutates / vault).
-4. Then pick deliberately: lab supervisor / god-view stub, second node belief, attenuation, RINA overlay packaging, …
+4. **Godot scenario worlds** — **accepted** ([ADR 0009](decisions/0009-godot-scenario-worlds.md), [docs/09](09-godot-scenario-worlds.md)): 3D room + session host from the start; node console; issuance document; blank vs full snapshots; playbooks = **headless peer**. Belief overlay later.
+5. Then pick deliberately: lab supervisor / god-view stub (partially implied by 0009), second OTP node / second laptop, attenuation, RINA overlay packaging, 0008 stage 5, …
 
-Do **not** couple this with: typed BEAM Identity SDK, HTTP auth, on-ledger bootstrap cap, deleting the OTP node, RINA.
+Do **not** couple this with: typed BEAM Identity SDK, HTTP auth as the *user* path, on-ledger bootstrap cap, deleting the OTP node, RINA, Phoenix, curl-as-King playbooks as the long-term actor.
 
 - Discard approaches that do not pay rent
 - Keep site (CONCRETE) as narrative; keep this repo as working architecture

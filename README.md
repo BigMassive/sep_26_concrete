@@ -28,6 +28,9 @@ This repository starts **docs-first**: architecture, residues from prior work, v
 | [docs/05-concept-backlog.md](docs/05-concept-backlog.md) | Concepts: slice / stub / paper |
 | [docs/06-out-of-scope.md](docs/06-out-of-scope.md) | Explicit non-goals for this round |
 | [docs/07-programme-map.md](docs/07-programme-map.md) | Owner outline (mostly paper) |
+| [docs/08-phase2-iota-identity.md](docs/08-phase2-iota-identity.md) | Phase 2 Identity notes |
+| [docs/09-godot-scenario-worlds.md](docs/09-godot-scenario-worlds.md) | Godot 3D worlds / console / playbooks (ADR 0009) |
+| [docs/10-godot-stage1-build.md](docs/10-godot-stage1-build.md) | Implementation brief for Godot stages 1–4 |
 | [docs/roadmap.md](docs/roadmap.md) | Phased plan |
 | [docs/decisions/](docs/decisions/) | Architecture decision records (ADRs) |
 

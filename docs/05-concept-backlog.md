@@ -19,12 +19,12 @@ Slice acceptance criteria are **frozen** ([04-vertical-slice.md](04-vertical-sli
 | IOTA Identity publish (`did:iota:…` name → head) | **Phase 2 (done A–D)** | On-chain ContentHead is head authority; OTP is executor / index ([08](08-phase2-iota-identity.md), [ADR 0007](decisions/0007-iota-did-head-authority.md)) |
 | One capability check on mutate | slice | Real check; bootstrap cap covers first slice (ADR 0005) |
 | Bootstrap capability (first user / first node) | slice | Do-anything/admin; auto-mint once (ADR 0005) |
-| Thin UI veneer (Godot) | slice | ADR 0001 — editor on host; project in-repo |
+| Thin UI veneer (Godot) | slice | ADR 0001 — editor on host. **3D worlds** [ADR 0009](decisions/0009-godot-scenario-worlds.md) accepted |
 | Docker Compose lab harness | stub or slice | Clone-and-go services only when slice needs them; not product topology |
 | Stock IPFS + stock IOTA (TCP/IP) | slice | Lab stand-ins; not final fabric (ADR 0002) |
 | Elixir / BEAM node runtime | slice | ADR 0003 — OTP API; no Phoenix UI (ADR 0004) |
 | Lab supervisor (harness) | stub or slice | ADR 0004 — seed + god-view; not commit/cap authority |
-| God-view vs node belief (position) | paper → stub when space lands | Two fields; Godot may render both (ADR 0004) |
+| God-view vs node belief (position) | paper → overlay **deferred** (0009) | Two fields conceptually (world vs OTP belief); do not draw overlay in the first room ([ADR 0004](decisions/0004-world-state-supervisor.md)) |
 | RINA overlay | stub → later slice | After first TCP/IP path; same prototype (ADR 0002) |
 | Serialised mutation of shared authority | stub or slice | If shared AdminCap-like object exists |
 | Keystore / crypto hand-out | paper | Real path in programme map; not until slice needs keys |
@@ -119,6 +119,21 @@ Slice acceptance criteria are **frozen** ([04-vertical-slice.md](04-vertical-sli
 | Information access: K_DAG + head + permission then crypto | paper | Mar_25/26 information path | Keystore |
 | ~20 CoT validators; TSS master; MPC per epoch | paper | Split custody of master key | K_DAG |
 | n-of-m → HKDF-SHA-256(master, name) = K_DAG | paper | Per-name DAG key | Keystore |
+
+## Godot worlds and first-person scenarios
+
+| Concept | Status | Intent | Touches |
+|---------|--------|--------|---------|
+| 3D physical veneer (room, body, node as laptop) | **stub** ([ADR 0009](decisions/0009-godot-scenario-worlds.md)) | Humans act in space; console still only talks OTP; session host from stage 1 | Godot, ADR 0004 |
+| Node console (mouse/keyboard passthrough) | **stub** (0009) | Nested screen; Esc stands up; not a real OS/KVM | Godot, OTP HTTP |
+| Scenario worlds (blank + full IOTA/IPFS snapshot) | **stub** (0009) | Two save kinds; save all personas; harness not a second ledger | Compose volumes, Godot |
+| Outer / inner lobby | **stub** (0009) | Outer = pick/load/save; inner = spawn another body | Session UI |
+| Issuance document (physical, inventoried) | **stub** (0009) | First-login chronology; bind body → ML-DSA-87; sidecar custody | 0008, inventory |
+| Stock ragdoll avatars (recoloured) | **stub** (0009) | Anyone may spawn/control; no mutate until document collected | Godot |
+| Chronological first-person beats | **stub** (0009) | Fill worlds: state X → see Y → do Z → Z′ | Playbooks |
+| Headless Godot bot peer (option C) | **stub** (0009 stage 4) | Honest playbook = second process; A/B debug only | Godot MP, CI |
+| Godot multiplayer (ephemeral poses) | **stub** (0009 from stage 1) | Session host from the outset; each peer still hits OTP | ADR 0004 |
+| Belief overlay on the world | **deferred** (0009 stage 9) | OTP/system belief may differ from Godot world | ADR 0004 |
 
 ## Wendy-links
 

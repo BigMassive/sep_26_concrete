@@ -46,3 +46,4 @@ There is also a semantic split between **where a node actually is** and **where 
 - Vocabulary gains god-view vs belief; programme-map presence work can attach later without rewriting this split.
 - Residues against “supervisor as product mesh” remain: harness labelling is mandatory in demos and docs.
 - Godot still talks **only** to OTP HTTP. Name → head **authority** is IOTA Identity ([ADR 0007](0007-iota-did-head-authority.md)); OTP is the process Godot calls, not a second ledger for the head.
+- 3D rooms, scenario packs, node-console KVM, and headless bot peers: [ADR 0009](0009-godot-scenario-worlds.md). Belief overlay on the world is deferred.
