@@ -1,10 +1,14 @@
 #!/usr/bin/env bash
-# Session host for the 3D lab room (listen :24567). Requires OTP on :4000 for console mutates.
-# Default: run the game. Set GODOT_EDITOR=1 to open the editor.
+# Headless Godot peer: join host, collect issuance like a human, sit, one console action.
+# Usage: ./scripts/godot-playbook.sh [playbook-name-or-path]
+# Host must already be listening (./scripts/godot-up.sh). OTP should be up for mutates.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 GODOT_BIN="${GODOT_BIN:-}"
+HOST="${CONCRETE_GODOT_HOST:-127.0.0.1}"
+PORT="${CONCRETE_GODOT_PORT:-24567}"
+PLAYBOOK="${1:-first-login}"
 
 if [[ -z "${GODOT_BIN}" ]]; then
   if [[ -x /home/stuart/Downloads/godot ]]; then
@@ -19,10 +23,4 @@ if [[ -z "${GODOT_BIN}" ]]; then
   fi
 fi
 
-echo "Using ${GODOT_BIN}"
-echo "Project: ${ROOT}/godot"
-if [[ "${GODOT_EDITOR:-}" == "1" ]]; then
-  exec "${GODOT_BIN}" --path "${ROOT}/godot" --editor
-else
-  exec "${GODOT_BIN}" --path "${ROOT}/godot"
-fi
+exec "${GODOT_BIN}" --path "${ROOT}/godot" --headless -- --join "${HOST}:${PORT}" --playbook "${PLAYBOOK}"

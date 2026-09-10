@@ -5,14 +5,14 @@ config_version=5
 
 config/name="sep_26_concrete"
 config/description="CONCRETE lab UI — backend is ground truth"
-run/main_scene="res://scenes/main.tscn"
+run/main_scene="res://scenes/world.tscn"
 config/features=PackedStringArray("4.5", "Forward Plus")
 config/icon="res://icon.svg"
 
 [display]
 
-window/size/viewport_width=1100
-window/size/viewport_height=700
+window/size/viewport_width=1280
+window/size/viewport_height=720
 window/stretch/mode="canvas_items"
 
 [rendering]

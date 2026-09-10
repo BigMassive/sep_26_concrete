@@ -37,7 +37,7 @@ theme_override_constants/separation=12
 [node name="Title" type="Label" parent="Margin/VBox"]
 layout_mode=2
 theme_override_font_sizes/font_size=28
-text="CONCRETE — lab veneer (beats 2–3)"
+text="CONCRETE — node-1 console"
 
 [node name="Subtitle" type="Label" parent="Margin/VBox"]
 layout_mode=2

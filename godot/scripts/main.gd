@@ -1,6 +1,8 @@
+class_name NodeConsole
 extends Control
 
 ## Thin veneer — all durable state from OTP HTTP (ADR 0004).
+## Nested in the 3D laptop SubViewport as the node-1 console (ADR 0009).
 
 const BASE := "http://127.0.0.1:4000"
 
@@ -16,6 +18,13 @@ var eve_id: String = ""
 var current_did: String = ""
 var _pending: String = ""
 
+## Set before add_child when instanced as the 3D node console (not the 2D debug scene).
+var use_session_actor: bool = false
+var session_principal_id: String = ""
+var session_keyed: bool = false
+var last_tag: String = ""
+var last_code: int = 0
+
 
 func _ready() -> void:
 	http = HTTPRequest.new()
@@ -25,7 +34,36 @@ func _ready() -> void:
 	$Margin/VBox/CreateBtn.pressed.connect(_on_create)
 	$Margin/VBox/AdvanceBtn.pressed.connect(_on_advance_king)
 	$Margin/VBox/DenyBtn.pressed.connect(_on_advance_eve)
+	if use_session_actor:
+		status_label.text = "Seated — waiting for this body's actor binding."
+		return
 	_refresh_all()
+
+
+func bind_actor(principal_id: String, keyed: bool) -> void:
+	session_principal_id = principal_id
+	session_keyed = keyed
+	_refresh_all()
+
+
+func console_idle() -> bool:
+	return _pending.is_empty()
+
+
+func playbook_create() -> void:
+	_on_create()
+
+
+func playbook_eve_deny() -> void:
+	_on_advance_eve()
+
+
+func _mutate_actor_id() -> String:
+	if use_session_actor:
+		if session_keyed and not session_principal_id.is_empty():
+			return session_principal_id
+		return "unkeyed"
+	return king_id
 
 
 func _refresh_all() -> void:
@@ -34,11 +72,14 @@ func _refresh_all() -> void:
 
 
 func _on_create() -> void:
-	if king_id.is_empty():
+	var actor := _mutate_actor_id()
+	if actor.is_empty():
 		status_label.text = "No King principal yet — is OTP up?"
 		return
+	if use_session_actor and not session_keyed:
+		status_label.text = "Unkeyed body — collect the issuance document (OTP will 403)."
 	var body := {
-		"principal_id": king_id,
+		"principal_id": actor,
 		"content": content_input.text,
 		"label": "plaque"
 	}
@@ -46,7 +87,7 @@ func _on_create() -> void:
 
 
 func _on_advance_king() -> void:
-	_advance_as(king_id, "advance_king")
+	_advance_as(_mutate_actor_id(), "advance_king")
 
 
 func _on_advance_eve() -> void:
@@ -88,6 +129,8 @@ func _on_http_completed(_result: int, code: int, _headers: PackedStringArray, bo
 	var text := body.get_string_from_utf8()
 	var tag := _pending
 	_pending = ""
+	last_tag = tag
+	last_code = code
 
 	if code == 0:
 		status_label.text = "OTP unreachable at %s — run ./scripts/node-up.sh (and lab-up for IPFS)." % BASE
@@ -110,7 +153,23 @@ func _on_http_completed(_result: int, code: int, _headers: PackedStringArray, bo
 			var b: Dictionary = parsed
 			var king: Dictionary = b.get("king", {})
 			king_id = str(king.get("id", ""))
-			king_label.text = "King: %s (%s)" % [str(king.get("display_name", "?")), _short_principal(king_id)]
+			var body_line := "This body: unkeyed"
+			if use_session_actor and session_keyed:
+				body_line = "This body: %s" % _short_principal(session_principal_id)
+			elif use_session_actor:
+				body_line = "This body: unkeyed (paper gates mutate)"
+			king_label.text = "OTP King: %s (%s)  ·  %s" % [
+				str(king.get("display_name", "?")),
+				_short_principal(king_id),
+				body_line,
+			]
+			if use_session_actor and not session_keyed:
+				people_label.text = "[i]Unkeyed — collect issuance to act as a principal. OTP King already exists from node-up; Godot will not use that key until paper pickup.[/i]"
+				_http_get("/v1/info_objects", "list")
+				return
+			if use_session_actor:
+				_http_get("/v1/directory?principal_id=%s" % session_principal_id.uri_encode(), "directory")
+				return
 			_http_post("/v1/directory", {"principal_id": king_id, "username": "King"}, "publish_king")
 		"publish_king":
 			if code == 503:

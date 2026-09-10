@@ -1,0 +1,10 @@
+{
+  "name": "first-login",
+  "steps": [
+    "join",
+    "pickup_nearest_document",
+    "sit_laptop",
+    "wait_console_ready",
+    "create_plaque"
+  ]
+}
