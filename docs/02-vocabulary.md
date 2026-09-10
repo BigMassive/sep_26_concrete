@@ -12,7 +12,7 @@ Single place for terms used in this prototype. Prefer these spellings in docs an
 | **Info object** | Versioned information with a durable name and a content head (commit graph). |
 | **Data** | Content whose access is gated by capability (+ keystore); distinct from versioned **information** head semantics. |
 | **Commit / Tree / Blob** | Git-like content model: head commit points at trees; trees at blobs/CIDs. Facets include content, read, write, links (and related). |
-| **Name / head** | Stable **DID** that points at the current content CID. Phase 1 used lab DID + IPFS DID doc. **Target:** IOTA Identity DID document ContentHead on stock IOTA ([ADR 0002](decisions/0002-ipfs-iota-did.md), [ADR 0007](decisions/0007-iota-did-head-authority.md)). |
+| **Name / head** | Stable **DID** that points at the current content CID. **Now:** IOTA Identity DID document ContentHead on stock IOTA when the package is configured ([ADR 0002](decisions/0002-ipfs-iota-did.md), [ADR 0007](decisions/0007-iota-did-head-authority.md)). Phase 1 leftover: lab DID + IPFS DID doc if Identity is unconfigured. |
 | **Ground truth** | Authoritative state; UI must not invent durable state. Name → head: **on-chain Identity**. Content bytes: **IPFS**. OTP: executor / cache / cap check; Godot talks only to OTP HTTP. |
 | **IINL** | Legacy Mar_25/26 IOTA IPFS name-link object. **Not** the naming path for this prototype (DID instead). |
 | **DID** | Decentralised identifier; naming from the start, including for a CoT’s IOTA when needed. |

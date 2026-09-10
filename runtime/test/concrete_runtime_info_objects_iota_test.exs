@@ -20,7 +20,10 @@ defmodule ConcreteRuntime.InfoObjectsIotaTest do
 
   defmodule OkCreate do
     def configured?, do: true
-    def create_and_publish(_opts), do: {:ok, %{did: "did:iota:lab:0x1", identity_object_id: "0x1"}}
+
+    def create_and_publish(_opts),
+      do: {:ok, %{did: "did:iota:lab:0x1", identity_object_id: "0x1", controller_cap_id: "0xcap"}}
+
     def require_on_chain_head(_did, _cid), do: :ok
   end
 
@@ -77,7 +80,8 @@ defmodule ConcreteRuntime.InfoObjectsIotaTest do
     assert attached.iota_did == "did:iota:lab:0x1"
     assert attached.identity_object_id == "0x1"
     assert attached.head_cid == "QmNew"
-    assert attached.did == "did:concrete:lab:x"
+    assert attached.did == "did:iota:lab:0x1"
+    assert attached.controller_cap_id == "0xcap"
   end
 
   test "configured Identity advance fails closed without iota_did" do
@@ -142,5 +146,50 @@ defmodule ConcreteRuntime.InfoObjectsIotaTest do
   test "read uses OTP registry when there is no iota_did" do
     obj = %{head_cid: "QmLab", did: "did:concrete:lab:x"}
     assert {:ok, "QmLab", "otp_registry"} = InfoObjects.head_for_read(obj)
+  end
+
+  test "API did is iota when iota_did is present; leftovers stay findable by lab DID" do
+    leftover = %{
+      did: "did:concrete:lab:x",
+      iota_did: "did:iota:lab:0x1",
+      head_cid: "QmA"
+    }
+
+    fresh = %{did: "did:iota:lab:0x2", iota_did: "did:iota:lab:0x2", head_cid: "QmB"}
+    objs = [leftover, fresh]
+
+    assert leftover == InfoObjects.find_object(objs, "did:concrete:lab:x")
+    assert leftover == InfoObjects.find_object(objs, "did:iota:lab:0x1")
+    assert fresh == InfoObjects.find_object(objs, "did:iota:lab:0x2")
+  end
+
+  test "iota index record drops authoritative head fields" do
+    indexed =
+      InfoObjects.index_record(%{
+        did: "did:iota:lab:0x1",
+        iota_did: "did:iota:lab:0x1",
+        identity_object_id: "0x1",
+        controller_cap_id: "0xcap",
+        label: "plaque",
+        head_cid: "QmShouldNotPersist",
+        content_cid: "QmAlsoDrop",
+        did_doc_cid: "QmDoc"
+      })
+
+    refute Map.has_key?(indexed, :head_cid)
+    refute Map.has_key?(indexed, :content_cid)
+    refute Map.has_key?(indexed, :did_doc_cid)
+    assert indexed == %{
+             did: "did:iota:lab:0x1",
+             iota_did: "did:iota:lab:0x1",
+             identity_object_id: "0x1",
+             controller_cap_id: "0xcap",
+             label: "plaque"
+           }
+  end
+
+  test "lab leftover index record keeps head_cid" do
+    obj = %{did: "did:concrete:lab:x", head_cid: "QmLab", label: "plaque"}
+    assert InfoObjects.index_record(obj) == obj
   end
 end

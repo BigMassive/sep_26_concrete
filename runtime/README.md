@@ -16,7 +16,7 @@ On first start (empty `lab/data/node/`), creates **node-1**, principal **King**,
 
 ## Beats 2+ — info objects (DID + IPFS)
 
-Requires lab IPFS (`./scripts/lab-up.sh`). Phase 1: `did:concrete:lab:…` on IPFS. Phase 2 target: `did:iota:…` ContentHead as head ([docs/08](../docs/08-phase2-iota-identity.md)).
+Requires lab IPFS (`./scripts/lab-up.sh`). When the Identity package is configured, API `did` is `did:iota:…` (ADR 0007 C). Without a package, Phase 1 `did:concrete:lab:…` remains.
 
 ```bash
 ./scripts/beat2-smoke.sh
@@ -40,4 +40,4 @@ Requires lab IPFS (`./scripts/lab-up.sh`). Phase 1: `did:concrete:lab:…` on IP
 | POST | `/v1/info_objects` | Create (King / bootstrap cap) |
 | POST | `/v1/info_objects/advance` | Advance head (cap-checked) |
 
-State: `lab/data/node/` (gitignored). Slice frozen (Phase 1). Identity: on-chain ContentHead done; sole SoT is ADR 0007 (code later).
+State: `lab/data/node/` (gitignored). Slice frozen (Phase 1). Identity: ADR 0007 A–D (fail closed, GET from chain, `did:iota:…`, index-only registry).

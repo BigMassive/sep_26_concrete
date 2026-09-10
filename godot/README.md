@@ -22,6 +22,6 @@ Requires **Godot 4.x** on the host (`GODOT_BIN` overrides path).
 
 1. See King principal from `/v1/bootstrap`
 2. **Create** an info object (DID + IPFS commit) as King
-3. See plaque fields from backend refresh (lab DID, **iota DID** when Identity is attached, head, content)
+3. See plaque fields from backend refresh (primary DID is `did:iota:…` when Identity is configured)
 4. **Advance** as King
 5. **Try as Eve** — expect deny; plaque unchanged

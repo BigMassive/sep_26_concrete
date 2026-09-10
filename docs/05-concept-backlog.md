@@ -16,7 +16,7 @@ Slice acceptance criteria are **frozen** ([04-vertical-slice.md](04-vertical-sli
 |---------|--------|-------|
 | Blob / Tree / Commit content model | slice | Residue — core of the slice; stock IPFS (ADR 0002) |
 | Name → head (**DID**) | slice / Phase 2 | Phase 1: lab `did:concrete:lab:` + IPFS DID doc ([ADR 0006](decisions/0006-lab-did-until-iota-identity.md)). Target: `did:iota:…` ContentHead is head authority ([ADR 0007](decisions/0007-iota-did-head-authority.md)) |
-| IOTA Identity publish (`did:iota:…` name → head) | **Phase 2 (next: A–D)** | Happy-path on-chain ContentHead done; sole SoT + iota-only names planned ([08](08-phase2-iota-identity.md), [ADR 0007](decisions/0007-iota-did-head-authority.md)) |
+| IOTA Identity publish (`did:iota:…` name → head) | **Phase 2 (done A–D)** | On-chain ContentHead is head authority; OTP is executor / index ([08](08-phase2-iota-identity.md), [ADR 0007](decisions/0007-iota-did-head-authority.md)) |
 | One capability check on mutate | slice | Real check; bootstrap cap covers first slice (ADR 0005) |
 | Bootstrap capability (first user / first node) | slice | Do-anything/admin; auto-mint once (ADR 0005) |
 | Thin UI veneer (Godot) | slice | ADR 0001 — editor on host; project in-repo |

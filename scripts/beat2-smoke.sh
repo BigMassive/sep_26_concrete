@@ -26,7 +26,9 @@ base = os.environ["BASE"]
 status = json.load(urllib.request.urlopen(f"{base}/v1/identity/status"))
 if status["iota_identity"]["package_configured"]:
     iota_did = created.get("iota_did")
+    assert created.get("did", "").startswith("did:iota:"), created
     assert iota_did, created
+    assert created["did"] == iota_did, created
     enc = urllib.parse.quote(iota_did, safe="")
     resolved = json.load(urllib.request.urlopen(f"{base}/v1/identity/resolve?did={enc}"))
     assert resolved.get("head_source") == "on_chain", resolved
@@ -44,6 +46,7 @@ GOT="$GOT" python3 - <<'PY'
 import json, os
 got = json.loads(os.environ["GOT"])
 if got.get("iota_did"):
+    assert got.get("did", "").startswith("did:iota:"), got
     assert got.get("head_source") == "on_chain", got
     print("GET head_source on_chain", got["head_cid"])
 else:

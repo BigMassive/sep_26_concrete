@@ -6,7 +6,7 @@ defmodule ConcreteRuntime.IotaIdentity do
   (`iota client ptb` in Docker). DID documents are packed per IOTA DID method
   v2 (JSON encoding, `did:0:0` placeholders, ContentHead → `ipfs://<cid>`).
   Head CID is read back from on-chain `did_doc` bytes; OTP `iota_heads.json`
-  stores controller-cap ids needed to sign updates.
+  stores ControllerCap ids needed to sign updates (custody, not a head).
   """
 
   @pkg_file_rel ["lab", "data", "iota", "identity_pkg_id.txt"]
@@ -21,7 +21,7 @@ defmodule ConcreteRuntime.IotaIdentity do
     configured = is_binary(pkg) and pkg != ""
 
     %{
-      naming_mode: if(configured, do: "did:iota+lab", else: "did:concrete:lab"),
+      naming_mode: if(configured, do: "did:iota", else: "did:concrete:lab"),
       iota_identity: %{
         target_method: "did:iota",
         package_id: pkg,
@@ -58,6 +58,13 @@ defmodule ConcreteRuntime.IotaIdentity do
     case package_id() do
       id when is_binary(id) and id != "" -> true
       _ -> false
+    end
+  end
+
+  def controller_cap_id(did) when is_binary(did) do
+    case Map.get(load_heads(), did) do
+      %{"controller_cap_id" => cap} when is_binary(cap) and cap != "" -> cap
+      _ -> nil
     end
   end
 
@@ -203,7 +210,6 @@ defmodule ConcreteRuntime.IotaIdentity do
               put_head(did, %{
                 "identity_object_id" => obj,
                 "controller_cap_id" => map["controller_cap_id"],
-                "head_cid" => head_cid,
                 "package_id" => map["package_id"],
                 "chain_id" => map["chain_id"],
                 "digest" => map["digest"]
@@ -243,7 +249,7 @@ defmodule ConcreteRuntime.IotaIdentity do
          controller_cap_id: meta["controller_cap_id"],
          on_chain: simplify_object(obj),
          did_document: document,
-         head_cid: on_chain_head || meta["head_cid"],
+         head_cid: on_chain_head,
          head_source:
            cond do
              is_binary(on_chain_head) and on_chain_head != "" -> "on_chain"
@@ -286,7 +292,7 @@ defmodule ConcreteRuntime.IotaIdentity do
               put_head(
                 did,
                 meta
-                |> Map.put("head_cid", head_cid)
+                |> Map.delete("head_cid")
                 |> Map.put("digest", map["digest"])
               )
 

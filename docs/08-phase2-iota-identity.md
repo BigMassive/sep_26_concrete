@@ -6,7 +6,7 @@ First post-freeze promotion ([roadmap.md](roadmap.md), [ADR 0006](decisions/0006
 
 **Name → head CID** lives on stock IOTA Identity, not in an OTP JSON field that can disagree with the ledger ([ADR 0002](decisions/0002-ipfs-iota-did.md)).
 
-Happy-path dual-publish (package + create/resolve + on-chain ContentHead) is **implemented**. The remaining promotion is to **stop treating OTP as a second head**: fail closed on mutate, read from chain, then iota-only names.
+Happy-path publish (package + create/resolve + on-chain ContentHead) and ADR 0007 **A–D** are **implemented**: fail closed on mutate, GET from chain, iota-only names when the package is configured, OTP registry as index.
 
 Lab assumption (owner, 2026-09-10): Compose IOTA and Docker `iota client ptb` are stable enough; do not build drift-as-a-product. A failed PTB is a failed create/advance.
 
@@ -20,8 +20,8 @@ Lab assumption (owner, 2026-09-10): Compose IOTA and Docker `iota client ptb` ar
 | Identity Move package on localnet | **done** — `./scripts/identity-publish.sh` → `lab/data/iota/identity_pkg_id.txt` |
 | OTP `Identity::new` + resolve | **done** — `/v1/identity`, `/v1/identity/resolve` |
 | Head CID on-chain in DID doc bytes | **done** (happy path) — packed DID-method-v2 JSON via `Identity::new` / `propose_update` |
-| OTP vs chain as competing heads | **current code** — Identity attach/update is best-effort; InfoObjects can succeed anyway |
-| Chain as sole head authority | **planned** — ADR 0007 stages A–D (not coded in this session) |
+| OTP vs chain as competing heads | **superseded** — mutate fail-closed; GET from chain |
+| Chain as sole head authority | **done** — ADR 0007 A–D |
 
 ## Lab commands
 
@@ -32,21 +32,21 @@ Lab assumption (owner, 2026-09-10): Compose IOTA and Docker `iota client ptb` ar
 ./scripts/identity-smoke.sh
 ```
 
-Creating an info object while the package is configured currently **best-effort** attaches `iota_did` / `identity_object_id`. After stage **A**, that attach (and later head update) is **required** or the request fails.
+Creating an info object while the package is configured **requires** on-chain `Identity::new` / `propose_update` (or the HTTP call fails). OTP persists an index (iota DID, ControllerCap id, label), not an authoritative `head_cid`. Without a package, the Phase 1 lab DID path remains.
 
 ## On-chain DID document
 
 Packed per [IOTA DID method v2](https://docs.iota.org/developer/iota-identity/references/iota-did-method-spec): magic `DID`, version `1`, JSON encoding `0`, `u16` length, then `{"doc":…,"meta":…}` with placeholder `did:0:0`. A `ContentHead` service holds `ipfs://<head_cid>`. Create uses `Identity::new`; later heads use `controller::borrow` → `Identity::propose_update` → `put_back` (single-controller identities execute inside `propose_update`).
 
-`iota_heads.json` keeps the **ControllerCap** id needed to sign updates (custody metadata). After ADR 0007 it must not be treated as head source of truth.
+`iota_heads.json` keeps the **ControllerCap** id needed to sign updates (custody metadata), not a head.
 
-## Planned stages (code later)
+## Stages (done)
 
 See [ADR 0007](decisions/0007-iota-did-head-authority.md).
 
 1. **A — Fail closed.** Package configured ⇒ create/advance errors if on-chain head does not move. Orphan IPFS blobs allowed; the name does not advance.
-2. **B — Reads from chain.** Hydrate plaque from Identity ContentHead → IPFS. OTP `head_cid` is cache at most.
-3. **C — Iota-only names.** API `did` is `did:iota:…`. Stop minting `did:concrete:lab:…`. Godot / beat 2 / beat 6 follow.
+2. **B — Reads from chain.** Hydrate plaque from Identity ContentHead → IPFS.
+3. **C — Iota-only names.** API `did` is `did:iota:…`. Stop minting `did:concrete:lab:…` when the package is configured. Godot / beat 2 / beat 6 follow.
 4. **D — Index only.** OTP stores iota DID, ControllerCap id, label; list is a projection. GenServer remains orchestrator (cap check + IPFS + PTB), not a second ledger.
 
 Godot still talks only to OTP `:4000`.

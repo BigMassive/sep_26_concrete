@@ -116,7 +116,7 @@ func _on_http_completed(_result: int, code: int, _headers: PackedStringArray, bo
 				return
 			var objs: Array = parsed.get("objects", [])
 			if objs.size() > 0:
-				current_did = str(objs[0].get("did", ""))
+				current_did = _primary_did(objs[0])
 				_http_get("/v1/info_object?did=%s" % current_did.uri_encode(), "plaque")
 			else:
 				plaque.text = "[i]No info objects yet — create one.[/i]"
@@ -160,15 +160,21 @@ func _apply_plaque(data: Variant) -> void:
 		plaque.text = str(data)
 		return
 	var d: Dictionary = data
-	current_did = str(d.get("did", current_did))
-	plaque.text = "[b]DID[/b] %s\n[b]iota DID[/b] %s\n[b]head[/b] %s\n[b]content[/b] %s\n[b]iota checkpoint[/b] %s\n[b]updated[/b] %s" % [
+	current_did = _primary_did(d)
+	plaque.text = "[b]DID[/b] %s\n[b]head[/b] %s\n[b]content[/b] %s\n[b]iota checkpoint[/b] %s\n[b]updated[/b] %s" % [
 		current_did,
-		_string_field(d, "iota_did"),
 		str(d.get("head_cid", "")),
 		str(d.get("content", "")),
 		str(d.get("iota_checkpoint", "")),
 		str(d.get("updated_at", ""))
 	]
+
+
+func _primary_did(data: Dictionary) -> String:
+	var iota := _string_field(data, "iota_did")
+	if iota != "—":
+		return iota
+	return str(data.get("did", ""))
 
 
 func _string_field(data: Dictionary, key: String) -> String:

@@ -19,12 +19,12 @@
 
 Promote backlog items deliberately (stub → slice).
 
-1. **IOTA Identity publish (happy path)** — **done** as dual-publish: package on localnet + `Identity::new` / resolve + on-chain ContentHead ([docs/08](08-phase2-iota-identity.md), [ADR 0006](decisions/0006-lab-did-until-iota-identity.md)).
-2. **Identity as sole name → head authority** — **next (code in a later session)** ([ADR 0007](decisions/0007-iota-did-head-authority.md), [docs/08](08-phase2-iota-identity.md)). Lab assumption: Docker + IOTA localnet stay up. Stages:
-   - **A** — create/advance **fail closed** if the chain does not take the new head (no OTP-ahead success)
+1. **IOTA Identity publish (happy path)** — **done**: package on localnet + `Identity::new` / resolve + on-chain ContentHead ([docs/08](08-phase2-iota-identity.md)).
+2. **Identity as sole name → head authority** — **done** ([ADR 0007](decisions/0007-iota-did-head-authority.md)). Lab assumption: Docker + IOTA localnet stay up.
+   - **A** — create/advance **fail closed** if the chain does not take the new head
    - **B** — reads hydrate from on-chain ContentHead → IPFS
-   - **C** — new objects are `did:iota:…` only (stop minting `did:concrete:lab:…`)
-   - **D** — OTP registry becomes an index / cache (ControllerCap id, label); not a second head
+   - **C** — new objects are `did:iota:…` only (lab DID only if Identity is unconfigured)
+   - **D** — OTP registry is an index (iota DID, ControllerCap id, label); not a second head
 3. Then pick deliberately: lab supervisor / god-view stub, second node belief, attenuation, RINA overlay packaging, …
 
 Do **not** couple this with: typed BEAM Identity SDK, HTTP auth, on-ledger bootstrap cap, deleting the OTP node, RINA.

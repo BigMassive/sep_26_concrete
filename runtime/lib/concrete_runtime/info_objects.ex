@@ -1,12 +1,12 @@
 defmodule ConcreteRuntime.InfoObjects do
   @moduledoc """
-  Named info objects: DID → IPFS commit head, gated by bootstrap capability.
+  Named info objects, gated by bootstrap capability.
 
-  Stage A (ADR 0007): if the Identity package is configured, create/advance
-  must land the new head on-chain or fail. Stage B: GET hydrates from
-  Identity ContentHead → IPFS when the object has an iota DID; OTP
-  `head_cid` is cache only. Without a package / iota DID, keep the
-  Phase 1 lab DID path (`did:concrete:lab:<id>`).
+  Stages A–D (ADR 0007): Identity configured ⇒ fail-closed mutate, GET from
+  ContentHead, API `did` is `did:iota:…`, and OTP persists an index
+  (iota DID, ControllerCap id, label) with no authoritative head.
+  Without a package, keep the Phase 1 lab DID path (`did:concrete:lab:<id>`).
+  Leftover lab-DID objects remain addressable.
   """
   use GenServer
 
@@ -39,7 +39,7 @@ defmodule ConcreteRuntime.InfoObjects do
   end
 
   def handle_call({:get, did}, _from, s) do
-    case Enum.find(s.objects, &(&1.did == did)) do
+    case find_object(s.objects, did) do
       nil ->
         {:reply, {:error, :not_found}, s}
 
@@ -57,6 +57,7 @@ defmodule ConcreteRuntime.InfoObjects do
          {:ok, checkpoint} <- optional_iota_checkpoint(),
          {:ok, obj} <- build_new(principal_id, content, opts, checkpoint),
          {:ok, obj} <- attach_iota_identity(obj) do
+      obj = index_record(obj)
       objects = s.objects ++ [obj]
       persist!(s.path, objects)
       state = %{s | objects: objects}
@@ -77,11 +78,12 @@ defmodule ConcreteRuntime.InfoObjects do
   def handle_call({:advance, principal_id, did, content, opts}, _from, s) do
     with {:ok, _, _} <- ConcreteRuntime.Bootstrap.authorize(principal_id, "mutate"),
          :ok <- require_ipfs(),
-         obj when not is_nil(obj) <- Enum.find(s.objects, &(&1.did == did)),
+         obj when not is_nil(obj) <- find_object(s.objects, did),
          {:ok, checkpoint} <- optional_iota_checkpoint(),
          {:ok, updated} <- build_advance(obj, principal_id, content, opts, checkpoint),
          {:ok, updated} <- sync_iota_head(updated) do
-      objects = Enum.map(s.objects, fn o -> if o.did == did, do: updated, else: o end)
+      updated = index_record(updated)
+      objects = Enum.map(s.objects, fn o -> if o.did == obj.did, do: updated, else: o end)
       persist!(s.path, objects)
       state = %{s | objects: objects}
 
@@ -103,8 +105,6 @@ defmodule ConcreteRuntime.InfoObjects do
 
   defp build_new(principal_id, content, opts, checkpoint) do
     label = Keyword.get(opts, :label) || "info"
-    id = short_id()
-    did = "did:concrete:lab:#{id}"
     message = Keyword.get(opts, :message) || "initial commit"
 
     with {:ok, content_cid} <-
@@ -119,40 +119,41 @@ defmodule ConcreteRuntime.InfoObjects do
            "parent_cid" => nil,
            "author_principal_id" => principal_id
          },
-         {:ok, head_cid} <- ConcreteRuntime.IPFS.add_json(commit),
-         did_doc = %{
-           "@context" => "https://www.w3.org/ns/did/v1",
-           "id" => did,
-           "controller" => principal_id,
-           "service" => [
-             %{
-               "id" => "#{did}#head",
-               "type" => "ContentHead",
-               "serviceEndpoint" => "ipfs://#{head_cid}"
-             }
-           ]
-         },
-         {:ok, did_doc_cid} <- ConcreteRuntime.IPFS.add_json(did_doc) do
-      {:ok,
-       %{
-         did: did,
-         label: label,
-         did_doc_cid: did_doc_cid,
-         head_cid: head_cid,
-         content_cid: content_cid,
-         created_by: principal_id,
-         updated_by: principal_id,
-         created_at: now(),
-         updated_at: now(),
-         iota_checkpoint: checkpoint
-       }}
+         {:ok, head_cid} <- ConcreteRuntime.IPFS.add_json(commit) do
+      if identity_mod().configured?() do
+        {:ok,
+         %{
+           label: label,
+           head_cid: head_cid,
+           created_by: principal_id
+         }}
+      else
+        did = "did:concrete:lab:#{short_id()}"
+
+        with {:ok, did_doc_cid} <- put_lab_did_doc(did, principal_id, head_cid) do
+          {:ok,
+           %{
+             did: did,
+             label: label,
+             did_doc_cid: did_doc_cid,
+             head_cid: head_cid,
+             content_cid: content_cid,
+             created_by: principal_id,
+             updated_by: principal_id,
+             created_at: now(),
+             updated_at: now(),
+             iota_checkpoint: checkpoint
+           }}
+        end
+      end
     end
   end
 
   defp build_advance(obj, principal_id, content, opts, checkpoint) do
     message = Keyword.get(opts, :message) || "advance"
 
-    with {:ok, content_cid} <-
+    with {:ok, parent_cid, _} <- parent_head(obj),
+         {:ok, content_cid} <-
            ConcreteRuntime.IPFS.add_json(%{
              "type" => "ConcreteContentBlob",
              "text" => content
@@ -161,34 +162,55 @@ defmodule ConcreteRuntime.InfoObjects do
            "type" => "ConcreteCommit",
            "message" => message,
            "content_cid" => content_cid,
-           "parent_cid" => obj.head_cid,
+           "parent_cid" => parent_cid,
            "author_principal_id" => principal_id
          },
          {:ok, head_cid} <- ConcreteRuntime.IPFS.add_json(commit),
-         did_doc = %{
-           "@context" => "https://www.w3.org/ns/did/v1",
-           "id" => obj.did,
-           "controller" => obj.created_by,
-           "service" => [
-             %{
-               "id" => "#{obj.did}#head",
-               "type" => "ContentHead",
-               "serviceEndpoint" => "ipfs://#{head_cid}"
-             }
-           ]
-         },
-         {:ok, did_doc_cid} <- ConcreteRuntime.IPFS.add_json(did_doc) do
+         {:ok, did_doc_cid} <- maybe_put_lab_did_doc(obj, head_cid) do
       {:ok,
-       %{
-         obj
-         | did_doc_cid: did_doc_cid,
-           head_cid: head_cid,
-           content_cid: content_cid,
-           updated_by: principal_id,
-           updated_at: now(),
-           iota_checkpoint: checkpoint
-       }}
+       obj
+       |> Map.put(:did_doc_cid, did_doc_cid)
+       |> Map.put(:head_cid, head_cid)
+       |> Map.put(:content_cid, content_cid)
+       |> Map.put(:updated_by, principal_id)
+       |> Map.put(:updated_at, now())
+       |> Map.put(:iota_checkpoint, checkpoint)}
     end
+  end
+
+  defp parent_head(obj) do
+    case iota_name(obj) do
+      did when is_binary(did) and did != "" ->
+        head_for_read(obj)
+
+      _ ->
+        {:ok, obj.head_cid, "otp_registry"}
+    end
+  end
+
+  defp maybe_put_lab_did_doc(obj, head_cid) do
+    did = obj.did
+
+    if is_binary(did) and String.starts_with?(did, "did:concrete:lab:") do
+      put_lab_did_doc(did, Map.get(obj, :created_by), head_cid)
+    else
+      {:ok, Map.get(obj, :did_doc_cid)}
+    end
+  end
+
+  defp put_lab_did_doc(did, controller, head_cid) do
+    ConcreteRuntime.IPFS.add_json(%{
+      "@context" => "https://www.w3.org/ns/did/v1",
+      "id" => did,
+      "controller" => controller,
+      "service" => [
+        %{
+          "id" => "#{did}#head",
+          "type" => "ContentHead",
+          "serviceEndpoint" => "ipfs://#{head_cid}"
+        }
+      ]
+    })
   end
 
   defp hydrate(obj) do
@@ -197,21 +219,22 @@ defmodule ConcreteRuntime.InfoObjects do
          {:ok, blob} <- ConcreteRuntime.IPFS.cat_json(commit["content_cid"]) do
       {:ok,
        %{
-         did: obj.did,
+         did: api_did(obj),
          label: obj.label,
          head_cid: head_cid,
          content_cid: commit["content_cid"],
-         did_doc_cid: obj.did_doc_cid,
+         did_doc_cid: Map.get(obj, :did_doc_cid),
          content: blob["text"],
          commit_message: commit["message"],
          parent_cid: commit["parent_cid"],
-         created_by: obj.created_by,
-         updated_by: obj.updated_by,
-         created_at: obj.created_at,
-         updated_at: obj.updated_at,
-         iota_checkpoint: obj.iota_checkpoint,
-         iota_did: Map.get(obj, :iota_did),
+         created_by: Map.get(obj, :created_by) || commit["author_principal_id"],
+         updated_by: Map.get(obj, :updated_by) || commit["author_principal_id"],
+         created_at: Map.get(obj, :created_at),
+         updated_at: Map.get(obj, :updated_at),
+         iota_checkpoint: Map.get(obj, :iota_checkpoint),
+         iota_did: iota_name(obj),
          identity_object_id: Map.get(obj, :identity_object_id),
+         controller_cap_id: Map.get(obj, :controller_cap_id),
          head_source: head_source
        }}
     end
@@ -219,7 +242,7 @@ defmodule ConcreteRuntime.InfoObjects do
 
   @doc false
   def head_for_read(obj) do
-    case Map.get(obj, :iota_did) do
+    case iota_name(obj) do
       did when is_binary(did) and did != "" ->
         case identity_mod().resolve(did) do
           {:ok, resolved} ->
@@ -237,21 +260,60 @@ defmodule ConcreteRuntime.InfoObjects do
     end
   end
 
+  @doc false
+  def find_object(objects, did) when is_list(objects) and is_binary(did) do
+    Enum.find(objects, fn o ->
+      o.did == did or Map.get(o, :iota_did) == did or api_did(o) == did
+    end)
+  end
+
+  defp api_did(obj) do
+    case iota_name(obj) do
+      did when is_binary(did) and did != "" -> did
+      _ -> obj.did
+    end
+  end
+
+  defp iota_name(obj) do
+    case Map.get(obj, :iota_did) do
+      did when is_binary(did) and did != "" ->
+        did
+
+      _ ->
+        case Map.get(obj, :did) do
+          did when is_binary(did) ->
+            if String.starts_with?(did, "did:iota:"), do: did, else: nil
+
+          _ ->
+            nil
+        end
+    end
+  end
+
   defp public(obj) do
-    Map.take(obj, [
-      :did,
-      :label,
-      :head_cid,
-      :content_cid,
-      :did_doc_cid,
-      :created_by,
-      :updated_by,
-      :created_at,
-      :updated_at,
-      :iota_checkpoint,
-      :iota_did,
-      :identity_object_id
-    ])
+    if iota_name(obj) do
+      %{
+        did: api_did(obj),
+        label: obj.label,
+        iota_did: iota_name(obj),
+        identity_object_id: Map.get(obj, :identity_object_id),
+        controller_cap_id: Map.get(obj, :controller_cap_id)
+      }
+    else
+      obj
+      |> Map.take([
+        :label,
+        :head_cid,
+        :content_cid,
+        :did_doc_cid,
+        :created_by,
+        :updated_by,
+        :created_at,
+        :updated_at,
+        :iota_checkpoint
+      ])
+      |> Map.put(:did, api_did(obj))
+    end
   end
 
   @doc false
@@ -260,12 +322,17 @@ defmodule ConcreteRuntime.InfoObjects do
 
     if mod.configured?() do
       case mod.create_and_publish(head_cid: obj.head_cid) do
-        {:ok, %{did: iota_did, identity_object_id: oid}} ->
+        {:ok, created} ->
+          iota_did = created.did
+          oid = created.identity_object_id
+
           with :ok <- mod.require_on_chain_head(iota_did, obj.head_cid) do
             {:ok,
              Map.merge(obj, %{
+               did: iota_did,
                iota_did: iota_did,
-               identity_object_id: oid
+               identity_object_id: oid,
+               controller_cap_id: Map.get(created, :controller_cap_id)
              })}
           end
 
@@ -282,7 +349,7 @@ defmodule ConcreteRuntime.InfoObjects do
     mod = identity_mod()
 
     if mod.configured?() do
-      case Map.get(obj, :iota_did) do
+      case iota_name(obj) do
         did when is_binary(did) and did != "" ->
           case mod.update_head(did, obj.head_cid) do
             {:ok, resolved} ->
@@ -336,38 +403,86 @@ defmodule ConcreteRuntime.InfoObjects do
     File.write!(path, Jason.encode!(Enum.map(objects, &to_json/1), pretty: true))
   end
 
+  @doc false
+  def index_record(obj) do
+    case iota_name(obj) do
+      did when is_binary(did) and did != "" ->
+        cap =
+          Map.get(obj, :controller_cap_id) ||
+            ConcreteRuntime.IotaIdentity.controller_cap_id(did)
+
+        %{
+          did: did,
+          iota_did: did,
+          identity_object_id: Map.get(obj, :identity_object_id),
+          controller_cap_id: cap,
+          label: obj.label
+        }
+
+      _ ->
+        obj
+    end
+  end
+
   defp to_json(o) do
-    %{
-      "did" => o.did,
-      "label" => o.label,
-      "did_doc_cid" => o.did_doc_cid,
-      "head_cid" => o.head_cid,
-      "content_cid" => o.content_cid,
-      "created_by" => o.created_by,
-      "updated_by" => o.updated_by,
-      "created_at" => o.created_at,
-      "updated_at" => o.updated_at,
-      "iota_checkpoint" => o.iota_checkpoint,
-      "iota_did" => Map.get(o, :iota_did),
-      "identity_object_id" => Map.get(o, :identity_object_id)
-    }
+    o = index_record(o)
+
+    case iota_name(o) do
+      did when is_binary(did) and did != "" ->
+        %{
+          "did" => did,
+          "iota_did" => did,
+          "identity_object_id" => Map.get(o, :identity_object_id),
+          "controller_cap_id" => Map.get(o, :controller_cap_id),
+          "label" => o.label
+        }
+
+      _ ->
+        %{
+          "did" => o.did,
+          "label" => o.label,
+          "did_doc_cid" => Map.get(o, :did_doc_cid),
+          "head_cid" => Map.get(o, :head_cid),
+          "content_cid" => Map.get(o, :content_cid),
+          "created_by" => Map.get(o, :created_by),
+          "updated_by" => Map.get(o, :updated_by),
+          "created_at" => Map.get(o, :created_at),
+          "updated_at" => Map.get(o, :updated_at),
+          "iota_checkpoint" => Map.get(o, :iota_checkpoint)
+        }
+    end
   end
 
   defp from_json(m) do
-    %{
-      did: m["did"],
-      label: m["label"],
-      did_doc_cid: m["did_doc_cid"],
-      head_cid: m["head_cid"],
-      content_cid: m["content_cid"],
-      created_by: m["created_by"],
-      updated_by: m["updated_by"],
-      created_at: m["created_at"],
-      updated_at: m["updated_at"],
-      iota_checkpoint: m["iota_checkpoint"],
-      iota_did: m["iota_did"],
-      identity_object_id: m["identity_object_id"]
-    }
+    iota =
+      cond do
+        is_binary(m["iota_did"]) and m["iota_did"] != "" -> m["iota_did"]
+        is_binary(m["did"]) and String.starts_with?(m["did"], "did:iota:") -> m["did"]
+        true -> nil
+      end
+
+    if iota do
+      index_record(%{
+        did: iota,
+        iota_did: iota,
+        identity_object_id: m["identity_object_id"],
+        controller_cap_id: m["controller_cap_id"],
+        label: m["label"]
+      })
+    else
+      %{
+        did: m["did"],
+        label: m["label"],
+        did_doc_cid: m["did_doc_cid"],
+        head_cid: m["head_cid"],
+        content_cid: m["content_cid"],
+        created_by: m["created_by"],
+        updated_by: m["updated_by"],
+        created_at: m["created_at"],
+        updated_at: m["updated_at"],
+        iota_checkpoint: m["iota_checkpoint"]
+      }
+    end
   end
 
   defp short_id do
