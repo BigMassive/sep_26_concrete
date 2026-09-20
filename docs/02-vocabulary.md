@@ -10,8 +10,8 @@ Single place for terms used in this prototype. Prefer these spellings in docs an
 | **Mesh** | Set of nodes that can cooperate; no requirement for a privileged centre *as product architecture*. |
 | **Circle of trust (CoT)** | Organisation / authority domain that runs one CONCRETE network instance. Many CoTs may exist; some may nest. Not generic PKI “circle of trust” prose. |
 | **Info object** | Versioned information with a durable name and a content head (commit graph). |
-| **Data** | Content whose access is gated by **capability** (+ keystore in the product story); **no** information facets (content/read/write/links). Lab: bootstrap **anything/everywhere** cap covers access. Distinct from versioned **information**. |
-| **User directory** | **Data** records `{public_key, username}` on **IPFS**, named with **`did:iota:…`**. Not an info object; no read/write-rights machinery. Access = bootstrap cap ([ADR 0008](decisions/0008-user-crypto-identity.md)). |
+| **Data** | Named bytes (stable **DID**, updatable **CID**) gated by **capability**. May carry a **Wendy-link** set. **Not** a plaque: no information commit-graph / content-read-write facets ([11](11-helen-alice-cot-beats.md)). |
+| **User directory** | **D3** data: `{public_key, username}` on **IPFS**, named with **`did:iota:…`**. Access cap-gated ([ADR 0008](decisions/0008-user-crypto-identity.md), [11](11-helen-alice-cot-beats.md)). |
 | **Commit / Tree / Blob** | Git-like content model: head commit points at trees; trees at blobs/CIDs. Facets include content, read, write, links (and related). |
 | **Name / head** | Stable **DID** that points at the current content CID. **Now:** IOTA Identity DID document ContentHead on stock IOTA when the package is configured ([ADR 0002](decisions/0002-ipfs-iota-did.md), [ADR 0007](decisions/0007-iota-did-head-authority.md)). Phase 1 leftover: lab DID + IPFS DID doc if Identity is unconfigured. |
 | **Ground truth** | Authoritative state; UI must not invent durable state. Name → head: **on-chain Identity**. Content bytes: **IPFS**. OTP: executor / cache / cap check; Godot talks only to OTP HTTP. |
@@ -23,16 +23,19 @@ Single place for terms used in this prototype. Prefer these spellings in docs an
 | **Bootstrap capability** | Auto-minted to the **first user on the first node** of a fresh instance; authorises **anything anywhere** (admin/root). Live check on mutates; not a Godot flag or supervisor bypass ([ADR 0005](decisions/0005-bootstrap-capability.md)). |
 | **Funding / voucher** | Time-limited economic authority (King-issued within a CoT) required alongside capability for many mutations/maintenance. |
 | **Boss** | Role that mints or delegates capabilities (site term). Exact hierarchy (guards, …) is out of scope until modelled. |
-| **King** | Bootstrap / highest local authority persona — in this prototype, the **first user** who receives the bootstrap capability ([ADR 0005](decisions/0005-bootstrap-capability.md)). Also issues vouchers in the funding story (paper). |
+| **King** | Bootstrap **role** (do-anything cap). First holder has a **human name** (storyboard: **Helen**) ([ADR 0005](decisions/0005-bootstrap-capability.md), [11](11-helen-alice-cot-beats.md)). |
+| **G** | CoT first-among-equals **information** DID; Wendy-links to D1–D5 ([11](11-helen-alice-cot-beats.md)). |
+| **D1–D5** | CoT data lists: user PKs; node EKs; username pairs; PIN pairs (tight read); pubkey→personal discovery root ([11](11-helen-alice-cot-beats.md)). |
+| **Workspace** | GraphEdit **data** (full layout) plus a **title** info object. Caps **point at** workspaces; the picture is not the authority record ([11](11-helen-alice-cot-beats.md)). |
 | **Principal** | The **person** acting on a node. **Truth:** index-0 **ML-DSA-87 public key** ([ADR 0008](decisions/0008-user-crypto-identity.md)), encoded `mldsa87:…`. Username is an alias. |
 | **Master seed** | FIPS 202 secret issued **once**, **outside** the system; product custody = seL4 vault (volatile). HKDF(index) derives ML-DSA-87 keypairs; **index 0** = main identity. |
 | **Shared task object** | Ledger object: escrow for a task (incl. crowdfunding) plus refs to participant node journals. |
 | **Node journal** | Local (seL4) accounting of work done by a node for a task. |
 | **Settler** | Component that reconciles journals against a shared task and performs settlement (e.g. IOTA PTB); may halt work when funds run out. Label as harness if privileged in a lab. |
-| **Wendy-link** | First-class bidirectional relation between named info endpoints `{DID, optional CID}`, stored in the links facet — not a one-way hyperlink. |
+| **Wendy-link** | Bidirectional `{DID, optional CID}` between **information or data** names (empty CID = live head). Not a hyperlink. Mar_26 IINL pair ([11](11-helen-alice-cot-beats.md)). |
 | **RINA** | Recursive InterNetwork Architecture — programme networking narrative; lab introduces it as an **overlay later**, after TCP/IP IPFS/IOTA (ADR 0002). |
-| **Vault / keystore** | seL4 (or stand-in) component holding keys in volatile memory; users do not see raw keys; remote expunge possible for bosses/auditors. |
-| **α / β / ω** | Local likelihood, confidence, and weight of evidence for identity/presence — matched to capability identity thresholds (paper). |
+| **Vault / keystore** | Per-user volatile key holder on a node. Lab: simple Elixir process, **rewrite as seL4 later**. In-system use-not-see; paper/bank may show keys ([11](11-helen-alice-cot-beats.md)). |
+| **α / β / ω** | Identity evidence vs cap thresholds. This beat: login stub that **passes** granted workspaces ([11](11-helen-alice-cot-beats.md)). |
 | **Vertical slice** | One end-to-end user-visible path implemented through all layers that matter for that path. |
 | **Slice / stub / paper** | Triage for concepts: implement now / placeholder interface / document only. |
 | **Residue** | Idea or pattern kept from a discarded prototype. |
@@ -41,9 +44,10 @@ Single place for terms used in this prototype. Prefer these spellings in docs an
 | **Scenario world** | Named, loadable demo starting condition. Two kinds: **blank** (no chain history) and **full snapshot** (Godot + IOTA/IPFS/OTP). Includes all personas. **Lab harness**, not head authority ([09](09-godot-scenario-worlds.md)). |
 | **Node console** | In-world screen on a node prop (e.g. laptop). Player mouse/keyboard drive that nested UI; still OTP HTTP only. |
 | **Outer / inner lobby** | Outer: pick / load / save a **scenario world**. Inner: already in that world; spawn or possess another body. Not CoT membership ([ADR 0009](decisions/0009-godot-scenario-worlds.md)). |
-| **Issuance document** | In-world physical artefact (lab) a person can be **given** and **inventory**. Collecting it binds an avatar to ML-DSA-87 so they may use a node. Custody remains sidecar/vault ([ADR 0008](decisions/0008-user-crypto-identity.md)). |
+| **Issuance document** | External paper/bank (readable keys). 3D tray is set dressing in [11](11-helen-alice-cot-beats.md); keying is genesis/import **workspaces**, not pickup-as-King. |
 | **Playbook bot** | Headless Godot **peer** in the session (option C). Collects issuance document like a human. Not curl-as-user; not a same-process intent script. |
-| **Lab supervisor** | Privileged lab harness process: bootstrap, seed durable facts, may publish **god-view** position. Not product mesh centre; not live capability/commit authority. |
+| **Lab supervisor** | Harness: seed, god-view including **powered / boot_stage / zeroised**. Not cap/commit authority ([ADR 0004](decisions/0004-world-state-supervisor.md), [11](11-helen-alice-cot-beats.md)). |
+| **Node supervisor** | Working-node task tree (vaults, identity process). Not the lab supervisor. |
 | **God-view (position)** | Objective / actual position of a node in the modelled or physical world. Lab: often supervisor-published. Not solely node self-report. |
 | **Node belief (position)** | Where the node *thinks* it is (local estimate). Owned by the node (OTP); confidence/αβω later. |
 

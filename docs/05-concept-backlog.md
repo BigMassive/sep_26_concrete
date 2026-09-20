@@ -56,7 +56,7 @@ Slice acceptance criteria are **frozen** ([04-vertical-slice.md](04-vertical-sli
 |---------|--------|--------|---------|
 | Circle of trust (CoT) | paper | Org / authority domain running one network | All scoped objects |
 | Many CoTs; nested / embedded CoTs | paper | Plurality and containment of trust domains | Caps, lists, validators |
-| Network-held permitted-EK list(s) | paper | Cap-gated admit of hardware into service | EK, info objects |
+| Network-held permitted-EK list(s) | **stub** ([11](11-helen-alice-cot-beats.md) D2) | Genesis: this node’s EK auto-listed; join-existing later | EK, caps |
 | UK TOP SECRET (+ allied) viability bar | paper | Assurance aspiration; not accreditation work here | Whole map |
 
 ## Time, space, presence
@@ -80,7 +80,7 @@ Slice acceptance criteria are **frozen** ([04-vertical-slice.md](04-vertical-sli
 | FIPS 202 → master seed; HKDF index (0=real, 1..=pseudonyms) | **lab sidecar** (0008) | Seed issued outside; vault later | ML-DSA |
 | ML-DSA-87 keypairs | **lab sidecar** (0008) | Index 0 = main identity; pubkey is truth | Auth, OTP `principal_id` |
 | Optional ML-KEM wrap with auditor pubkey | paper | Auditor-mediated visibility | Audit |
-| Custody: bank / seL4 vault / dongle | paper (lab: OTP sidecar) | Product: seL4 vault, volatile | Vault |
+| Custody: bank / seL4 vault / dongle | paper (lab: Elixir vault process, **rewrite as seL4 later** — [11](11-helen-alice-cot-beats.md)) | Product: seL4 vault, volatile; no NIFs | Vault |
 | Offline seL4 vault (volatile, sparse keys) | paper | Disconnected work | Keystore |
 | Remote expunge of vault keys (not remote read) | paper | Boss/auditor oversight | Vault, revocation |
 | Users never see raw keys | paper | Stable product principle | UI, vault |
@@ -94,7 +94,7 @@ Slice acceptance criteria are **frozen** ([04-vertical-slice.md](04-vertical-sli
 | Cap = data/information boss → user | paper | Authority as transferable info/data | Info objects |
 | Self-imposed restrictions (attenuation) | paper | Holder narrows own authority | Caps |
 | Single 4D ontological meaning on each cap | paper | Semantic precision of “what is allowed” | HQDM |
-| Identity thresholds on caps | paper | Act only if confidence ≥ threshold | αβω |
+| Identity thresholds on caps | **stub** ([11](11-helen-alice-cot-beats.md)) | Login αβω stub this beat | αβω |
 | Mutate/maintain requires capability ∧ funding | paper | Dual gate; do not collapse into one object | Settler |
 | King issues time-limited vouchers (org/CoT flow) | paper | Funding control plane | King, CoT |
 | Blinded funding flows for auditors | paper | Conditional financial visibility | Audit |
@@ -128,9 +128,9 @@ Slice acceptance criteria are **frozen** ([04-vertical-slice.md](04-vertical-sli
 | Node console (mouse/keyboard passthrough) | **stub** (0009) | Nested screen; Esc stands up; not a real OS/KVM | Godot, OTP HTTP |
 | Scenario worlds (blank + full IOTA/IPFS snapshot) | **stub** (0009) | Two save kinds; save all personas; harness not a second ledger | Compose volumes, Godot |
 | Outer / inner lobby | **stub** (0009) | Outer = pick/load/save; inner = spawn another body | Session UI |
-| Issuance document (physical, inventoried) | **stub** (0009) | First-login chronology; bind body → ML-DSA-87; sidecar custody | 0008, inventory |
-| Stock ragdoll avatars (recoloured) | **stub** (0009) | Anyone may spawn/control; no mutate until document collected | Godot |
-| Chronological first-person beats | **stub** (0009) | Fill worlds: state X → see Y → do Z → Z′ | Playbooks |
+| Issuance document (physical, inventoried) | **stub** — keying via workspaces in [11](11-helen-alice-cot-beats.md) | Tray is set dressing this beat | 0008, 0009 |
+| Stock ragdoll avatars (recoloured) | **stub** (0009) | Anyone may spawn/control; onboard is not spawn | Godot |
+| Chronological first-person beats | **stub** | Current play: [11](11-helen-alice-cot-beats.md) | Playbooks |
 | Headless Godot bot peer (option C) | **stub** (0009 stage 4) | Honest playbook = second process; A/B debug only | Godot MP, CI |
 | Godot multiplayer (ephemeral poses) | **stub** (0009 from stage 1) | Session host from the outset; each peer still hits OTP | ADR 0004 |
 | Belief overlay on the world | **deferred** (0009 stage 9) | OTP/system belief may differ from Godot world | ADR 0004 |
@@ -139,7 +139,7 @@ Slice acceptance criteria are **frozen** ([04-vertical-slice.md](04-vertical-sli
 
 | Concept | Status | Intent | Touches |
 |---------|--------|--------|---------|
-| Wendy-link structure: dual-ended `{name, opt CID}` in links facet | paper | First-class bidirectional relation; not hyperlink | Info commits |
+| Wendy-link structure: dual-ended `{name, opt CID}`; info **or** data | **stub** ([11](11-helen-alice-cot-beats.md)) | Bidirectional; same DID new CID on data | Info/data, Identity |
 | Bidirectional bookkeeping when linking A↔B | paper | Both objects’ link sets updated | Keystore / commits |
 | Links permissioned like other info facets | paper | Same cap/funding story later | Caps |
 

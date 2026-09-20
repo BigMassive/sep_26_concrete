@@ -123,9 +123,9 @@ Use this whenever adding a story, in first person:
 6. State Z′ (inventory, OTP, console text, who is seated)
 7. Fail path
 
-**v0 story (stage 3–4):** *First login, blank world.* X = no King. Y = empty room, tray with one document, closed/idle laptop. Z = pick up document, sit, bootstrap/create as first user. Z′ = I am King; bootstrap cap on my pubkey; paper still in inventory.
+**v0 story (0009 stages 3–4, superseded for keying):** paper pickup gated Godot while OTP already had King.
 
-Later: second peer Eve picks a second document, sits after King Escs, advance denied.
+**Helen / Alice CoT:** [11-helen-alice-cot-beats.md](11-helen-alice-cot-beats.md). Coding: [12-helen-alice-build.md](12-helen-alice-build.md).
 
 ## Playbooks vs smokes
 
@@ -138,4 +138,4 @@ Later: second peer Eve picks a second document, sits after King Escs, advance de
 
 ## Non-goals
 
-Phoenix; curl-as-user; A/B as CI actor; hardware KVM; photoreal meshes; combat; RINA; seL4; signed HTTP (0008-5); belief overlay; full BBAC; funding vouchers; Wendy-links; treating ragdoll colour as cryptographic identity.
+Phoenix; curl-as-user; A/B as CI actor; hardware KVM; photoreal meshes; combat; real RINA overlay; real seL4; signed HTTP (0008-5); belief overlay; full BBAC; funding vouchers; treating ragdoll colour as cryptographic identity.

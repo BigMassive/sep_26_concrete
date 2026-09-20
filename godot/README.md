@@ -54,3 +54,5 @@ godot --path godot -- --console-only
 ## What the nested console can do
 
 Same HTTP dialect as before: health, bootstrap, directory **people** (data), create/advance plaque, Eve deny. In the 3D session, create/advance use **this seated body’s** principal after pickup, not “whoever OTP lists as King” unless this body collected the first paper.
+
+**Next:** Helen/Alice CoT storyboard [docs/11](../docs/11-helen-alice-cot-beats.md); implement per [docs/12](../docs/12-helen-alice-build.md).

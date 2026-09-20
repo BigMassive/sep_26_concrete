@@ -72,4 +72,6 @@ Keep it boring, e.g. `{ "name": "first-login", "steps": [ "join", "pickup_neares
 - [ ] `godot/README.md` updated; 2D-only path explained if kept as a debug scene.
 - [ ] No secrets committed; `lab/data/` stays gitignored.
 
+**Next:** Helen/Alice CoT — [docs/11](../11-helen-alice-cot-beats.md), brief [docs/12](../12-helen-alice-build.md).
+
 When in doubt, prefer a **visible clumsy 3D room that two processes can share** over a polished single-player menu.

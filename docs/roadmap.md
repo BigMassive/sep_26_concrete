@@ -26,10 +26,10 @@ Promote backlog items deliberately (stub → slice).
    - **C** — new objects are `did:iota:…` only (lab DID only if Identity is unconfigured)
    - **D** — OTP registry is an index (iota DID, ControllerCap id, label); not a second head
 3. **User cryptographic identity** — **accepted** ([ADR 0008](decisions/0008-user-crypto-identity.md)): stages **1–4 done**. Stage 5 later (signed mutates / vault).
-4. **Godot scenario worlds** — **accepted** ([ADR 0009](decisions/0009-godot-scenario-worlds.md), [docs/09](09-godot-scenario-worlds.md)): 3D room + session host from the start; node console; issuance document; blank vs full snapshots; playbooks = **headless peer**. Belief overlay later.
-5. Then pick deliberately: lab supervisor / god-view stub (partially implied by 0009), second OTP node / second laptop, attenuation, RINA overlay packaging, 0008 stage 5, …
+4. **Godot scenario worlds** — **accepted** ([ADR 0009](decisions/0009-godot-scenario-worlds.md), [docs/09](09-godot-scenario-worlds.md)): 3D room + session host; node console; playbooks = **headless peer**. Belief overlay later.
+5. **Helen / Alice CoT** — storyboard **accepted** ([docs/11](11-helen-alice-cot-beats.md)); implement per [docs/12](12-helen-alice-build.md). Genesis workspaces, G/D1–D5, caps vs GraphEdit, vaults, discovery, Wendy-links. Payments, real seL4, second node, 0008-5 still later.
 
-Do **not** couple this with: typed BEAM Identity SDK, HTTP auth as the *user* path, on-ledger bootstrap cap, deleting the OTP node, RINA, Phoenix, curl-as-King playbooks as the long-term actor.
+Do **not** couple this with: typed BEAM Identity SDK, signed HTTP as the *user* path (until 0008-5), on-ledger bootstrap cap, deleting the OTP node, real RINA, Phoenix, curl-as-King playbooks as the long-term actor.
 
 - Discard approaches that do not pay rent
 - Keep site (CONCRETE) as narrative; keep this repo as working architecture
