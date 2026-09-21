@@ -57,29 +57,121 @@ defmodule ConcreteRuntime.Workspaces do
       "locked" => false,
       "system" => true,
       "nodes" => [
-        %{"id" => "username", "title" => "Username", "x" => 40, "y" => 40, "type" => "text_in"},
+        %{"id" => "username", "title" => "Username", "x" => 20, "y" => 20, "type" => "text_in"},
         %{
           "id" => "public_key",
           "title" => "Public key",
-          "x" => 40,
-          "y" => 160,
+          "x" => 20,
+          "y" => 140,
           "type" => "text_in"
         },
         %{
           "id" => "private_key",
           "title" => "Private key (paper)",
-          "x" => 40,
-          "y" => 280,
+          "x" => 20,
+          "y" => 260,
           "type" => "text_in"
         },
-        %{"id" => "pin", "title" => "PIN", "x" => 360, "y" => 40, "type" => "text_in"},
-        %{"id" => "run", "title" => "Run genesis", "x" => 360, "y" => 200, "type" => "run"}
+        %{"id" => "pin", "title" => "PIN", "x" => 20, "y" => 380, "type" => "text_in"},
+        %{
+          "id" => "run",
+          "title" => "Run genesis",
+          "subtitle" => "function — will write / start outputs",
+          "x" => 280,
+          "y" => 200,
+          "type" => "run"
+        },
+        %{
+          "id" => "preview_note",
+          "title" => "Preview",
+          "subtitle" => "What genesis will do. GraphEdit cannot change these links.",
+          "x" => 280,
+          "y" => 20,
+          "type" => "note"
+        },
+        %{
+          "id" => "d1",
+          "title" => "D1",
+          "subtitle" => "will write — CoT membership",
+          "x" => 560,
+          "y" => 20,
+          "type" => "data"
+        },
+        %{
+          "id" => "d2",
+          "title" => "D2",
+          "subtitle" => "will write — this node's EK",
+          "x" => 560,
+          "y" => 120,
+          "type" => "data"
+        },
+        %{
+          "id" => "d3",
+          "title" => "D3",
+          "subtitle" => "will write — pubkey ↔ username",
+          "x" => 560,
+          "y" => 220,
+          "type" => "data"
+        },
+        %{
+          "id" => "d4",
+          "title" => "D4",
+          "subtitle" => "will write — PIN (tight read)",
+          "x" => 560,
+          "y" => 320,
+          "type" => "data"
+        },
+        %{
+          "id" => "d5",
+          "title" => "D5[Helen]",
+          "subtitle" => "will write — her discovery root",
+          "x" => 560,
+          "y" => 420,
+          "type" => "data"
+        },
+        %{
+          "id" => "g",
+          "title" => "G",
+          "subtitle" => "will write — Circle of Trust info",
+          "x" => 820,
+          "y" => 220,
+          "type" => "info"
+        },
+        %{
+          "id" => "vault",
+          "title" => "Helen vault",
+          "subtitle" => "will start — import paper private key",
+          "x" => 820,
+          "y" => 40,
+          "type" => "process"
+        },
+        %{
+          "id" => "identity",
+          "title" => "Identity process",
+          "subtitle" => "will start — username + PIN child",
+          "x" => 820,
+          "y" => 400,
+          "type" => "process"
+        }
       ],
       "wires" => [
         ["username", "run"],
         ["public_key", "run"],
         ["private_key", "run"],
-        ["pin", "run"]
+        ["pin", "run"],
+        ["run", "d1"],
+        ["run", "d2"],
+        ["run", "d3"],
+        ["run", "d4"],
+        ["run", "d5"],
+        ["run", "g"],
+        ["run", "vault"],
+        ["run", "identity"],
+        ["g", "d1"],
+        ["g", "d2"],
+        ["g", "d3"],
+        ["g", "d4"],
+        ["g", "d5"]
       ]
     }
   end

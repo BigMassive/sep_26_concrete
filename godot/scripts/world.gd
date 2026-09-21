@@ -204,15 +204,20 @@ func _update_hud() -> void:
 		prompt_label.text = ""
 		inventory_label.text = "Inventory: —"
 		return
-	var items := ", ".join(p.inventory) if p.inventory.size() > 0 else "(empty)"
-	inventory_label.text = "Inventory: %s" % items
+	if p.inventory.size() == 0:
+		inventory_label.text = "Inventory: (empty)"
+	else:
+		var names: PackedStringArray = PackedStringArray()
+		for id in p.inventory:
+			names.append(_paper_label(str(id)))
+		inventory_label.text = "Inventory: %s" % ", ".join(names)
 	if p.seated:
 		prompt_label.text = ""
 		return
 	var near_doc := _nearest_free_document(p.global_position)
 	var d_lap := _xz_dist(p.global_position, laptop_pos)
 	if near_doc != "" and _xz_dist(p.global_position, documents[near_doc].position) < PICKUP_RANGE:
-		prompt_label.text = "E · pick up paper (set dressing)"
+		prompt_label.text = "E · pick up paper (fills W0 / login keys)"
 	elif d_lap < SIT_RANGE:
 		if seated_peer_id != 0 and seated_peer_id != p.peer_id:
 			prompt_label.text = "Laptop occupied (one seater)"
@@ -427,8 +432,16 @@ func _build_room() -> void:
 	laptop_pos = Vector3(3.0, 0.0, -2.85)
 
 	_box(room, Vector3(-3.2, 0.52, -4.0), Vector3(1.1, 0.06, 0.7), Color(0.55, 0.45, 0.32))
-	_spawn_document(room, "paper-1", Vector3(-3.45, 0.62, -4.05), Color(0.93, 0.91, 0.82))
-	_spawn_document(room, "paper-2", Vector3(-2.95, 0.62, -3.95), Color(0.9, 0.88, 0.78))
+	_spawn_document(room, "paper-1", Vector3(-3.45, 0.62, -4.05), Color(0.93, 0.91, 0.82), {
+		"holder_name": "Helen",
+		"public_key": "mldsa87:paper-helen",
+		"private_key": "paper-helen-sk",
+	})
+	_spawn_document(room, "paper-2", Vector3(-2.95, 0.62, -3.95), Color(0.9, 0.88, 0.78), {
+		"holder_name": "Alice",
+		"public_key": "mldsa87:paper-alice",
+		"private_key": "paper-alice-sk",
+	})
 
 	var tray_tag := Label3D.new()
 	tray_tag.text = "Issuance tray\n(set dressing — keying is W0 / login)"
@@ -445,14 +458,54 @@ func _build_room() -> void:
 	room.add_child(node_tag)
 
 
-func _spawn_document(parent: Node, doc_id: String, pos: Vector3, color: Color) -> void:
+func credentials_from_local_inventory() -> Dictionary:
+	var p := local_player()
+	if p == null:
+		return {}
+	for i in range(p.inventory.size() - 1, -1, -1):
+		var doc_id := str(p.inventory[i])
+		var doc: Variant = documents.get(doc_id)
+		if typeof(doc) != TYPE_DICTIONARY:
+			continue
+		var rec: Dictionary = doc
+		var pk := str(rec.get("public_key", ""))
+		if pk.is_empty():
+			continue
+		return {
+			"paper_id": doc_id,
+			"holder_name": str(rec.get("holder_name", doc_id)),
+			"public_key": pk,
+			"private_key": str(rec.get("private_key", "")),
+		}
+	return {}
+
+
+func _paper_label(doc_id: String) -> String:
+	var doc: Variant = documents.get(doc_id)
+	if typeof(doc) == TYPE_DICTIONARY:
+		var who := str(doc.get("holder_name", ""))
+		if not who.is_empty():
+			return "%s keys" % who
+	return doc_id
+
+
+func _spawn_document(parent: Node, doc_id: String, pos: Vector3, color: Color, creds: Dictionary = {}) -> void:
 	var mesh := _box(parent, pos, Vector3(0.28, 0.02, 0.36), color, false)
 	mesh.name = doc_id
 	var tag := Label3D.new()
-	tag.text = "ISSUANCE\n(public identity)"
+	var who := str(creds.get("holder_name", "ISSUANCE"))
+	tag.text = "%s\npaper keys" % who
 	tag.position = Vector3(0, 0.12, 0)
 	tag.font_size = 14
 	tag.pixel_size = 0.004
 	tag.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	mesh.add_child(tag)
-	documents[doc_id] = {"position": pos, "taken": false, "taken_by": 0, "mesh": mesh}
+	documents[doc_id] = {
+		"position": pos,
+		"taken": false,
+		"taken_by": 0,
+		"mesh": mesh,
+		"holder_name": str(creds.get("holder_name", "")),
+		"public_key": str(creds.get("public_key", "")),
+		"private_key": str(creds.get("private_key", "")),
+	}

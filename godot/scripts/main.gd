@@ -5,6 +5,17 @@ extends Control
 ## Helen → Alice play: empty CoT, W0 genesis, W1, Exit, Alice login, discovery, W2.
 
 const BASE := "http://127.0.0.1:4000"
+const WIRE_COLOR := Color(0.62, 0.66, 0.72)
+const KIND_COLORS := {
+	"text_in": Color(0.22, 0.38, 0.52),
+	"text_out": Color(0.22, 0.38, 0.52),
+	"user_picker": Color(0.22, 0.38, 0.52),
+	"run": Color(0.58, 0.28, 0.46),
+	"data": Color(0.62, 0.46, 0.18),
+	"info": Color(0.18, 0.5, 0.4),
+	"process": Color(0.36, 0.3, 0.56),
+	"note": Color(0.3, 0.32, 0.36),
+}
 
 signal session_changed(principal_id: String, username: String)
 
@@ -240,6 +251,7 @@ func _emit_session() -> void:
 
 func _clear_screen() -> void:
 	for c in screen_host.get_children():
+		screen_host.remove_child(c)
 		c.queue_free()
 	_graph_inputs.clear()
 	_discovery = null
@@ -247,7 +259,15 @@ func _clear_screen() -> void:
 
 
 func _vbox() -> VBoxContainer:
+	# ScreenHost is a VBox so the graph can take leftover height.
+	if screen_host is VBoxContainer:
+		var host := screen_host as VBoxContainer
+		host.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		host.size_flags_vertical = Control.SIZE_EXPAND_FILL
+		host.add_theme_constant_override("separation", 8)
+		return host
 	var box := VBoxContainer.new()
+	box.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	box.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	box.add_theme_constant_override("separation", 8)
@@ -295,9 +315,13 @@ func _show_login() -> void:
 	var box := _vbox()
 	box.add_child(_heading("Identity process"))
 	box.add_child(_note("Username + PIN. Paper private key is imported into this user's vault. Stub αβω pass granted caps. Not signed sessions."))
+	box.add_child(_paper_status_label())
+	var creds := _inventory_credentials()
 	var user := LineEdit.new()
 	user.placeholder_text = "Username"
 	user.name = "LoginUser"
+	if not creds.is_empty():
+		user.text = str(creds.get("holder_name", ""))
 	box.add_child(user)
 	var pin := LineEdit.new()
 	pin.placeholder_text = "PIN"
@@ -308,6 +332,8 @@ func _show_login() -> void:
 	sk.placeholder_text = "Paper private key"
 	sk.secret = true
 	sk.name = "LoginKey"
+	if not creds.is_empty():
+		sk.text = str(creds.get("private_key", ""))
 	box.add_child(sk)
 	box.add_child(_btn("Login", func() -> void:
 		_http_post("/v1/session/login", {
@@ -365,17 +391,7 @@ func _show_workspace(ws: Dictionary) -> void:
 	_screen = "workspace"
 	var layout: Dictionary = ws.get("layout", {})
 	if layout.is_empty() and _workspace_id == "w0":
-		layout = {
-			"workspace_id": "w0",
-			"nodes": [
-				{"id": "username", "title": "Username", "x": 40, "y": 40, "type": "text_in"},
-				{"id": "public_key", "title": "Public key", "x": 40, "y": 140, "type": "text_in"},
-				{"id": "private_key", "title": "Private key (paper)", "x": 40, "y": 240, "type": "text_in"},
-				{"id": "pin", "title": "PIN", "x": 380, "y": 40, "type": "text_in"},
-				{"id": "run", "title": "Run genesis", "x": 380, "y": 180, "type": "run"},
-			],
-			"wires": [["username", "run"], ["public_key", "run"], ["private_key", "run"], ["pin", "run"]],
-		}
+		layout = {"workspace_id": "w0", "nodes": [], "wires": []}
 	_usernames = ws.get("usernames", [])
 	var box := _vbox()
 	var title := "Workspace %s" % str(ws.get("id", _workspace_id))
@@ -384,6 +400,8 @@ func _show_workspace(ws: Dictionary) -> void:
 	if bool(ws.get("system", false)):
 		title += " — system (no prior cap)"
 	box.add_child(_heading(title))
+	box.add_child(_paper_status_label())
+	box.add_child(_note("blue = input · pink = function · amber = data · green = info · purple = process. Wires are locked (same colour)."))
 	var row := HBoxContainer.new()
 	row.add_child(_btn("Back", _refresh))
 	row.add_child(_btn("Try save layout (expect deny if locked)", func() -> void:
@@ -395,6 +413,7 @@ func _show_workspace(ws: Dictionary) -> void:
 	))
 	box.add_child(row)
 	_build_graph(box, layout)
+	_apply_inventory_to_graph()
 	var g_did := str(ws.get("g_did", ""))
 	if _graph_inputs.has("link") and _graph_inputs["link"] is LineEdit and not g_did.is_empty():
 		(_graph_inputs["link"] as LineEdit).text = g_did
@@ -402,9 +421,17 @@ func _show_workspace(ws: Dictionary) -> void:
 
 func _build_graph(parent: Control, layout: Dictionary) -> void:
 	var graph := GraphEdit.new()
+	graph.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	graph.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	graph.custom_minimum_size = Vector2(0, 380)
+	graph.size_flags_stretch_ratio = 1.0
+	graph.custom_minimum_size = Vector2(0, 280)
 	graph.right_disconnects = false
+	graph.minimap_enabled = true
+	graph.show_grid = true
+	graph.add_theme_color_override("connection_rim_color", WIRE_COLOR)
+	graph.connection_request.connect(_on_graph_connection_request)
+	graph.disconnection_request.connect(_on_graph_disconnection_request)
+	graph.delete_nodes_request.connect(_on_graph_delete_nodes)
 	parent.add_child(graph)
 	_graph_inputs.clear()
 	var nodes: Array = layout.get("nodes", [])
@@ -417,8 +444,17 @@ func _build_graph(parent: Control, layout: Dictionary) -> void:
 		gn.name = nid
 		gn.title = str(n.get("title", nid))
 		gn.position_offset = Vector2(float(n.get("x", 40)), float(n.get("y", 40)))
-		gn.custom_minimum_size = Vector2(220, 80)
+		gn.custom_minimum_size = Vector2(210, 72)
 		var typ := str(n.get("type", "text_in"))
+		_style_graph_node(gn, typ)
+		var subtitle := str(n.get("subtitle", ""))
+		if not subtitle.is_empty():
+			var sub := Label.new()
+			sub.text = subtitle
+			sub.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+			sub.add_theme_font_size_override("font_size", 11)
+			sub.add_theme_color_override("font_color", Color(0.88, 0.9, 0.93))
+			gn.add_child(sub)
 		match typ:
 			"text_out":
 				var out := LineEdit.new()
@@ -440,16 +476,96 @@ func _build_graph(parent: Control, layout: Dictionary) -> void:
 				b.text = gn.title
 				b.pressed.connect(_on_run_graph)
 				gn.add_child(b)
+			"data", "info", "process", "note":
+				pass
 			_:
 				var le := LineEdit.new()
 				le.placeholder_text = gn.title
 				gn.add_child(le)
 				_graph_inputs[nid] = le
-		gn.set_slot(0, true, 0, Color(0.55, 0.75, 0.9), true, 0, Color(0.55, 0.75, 0.9))
+		gn.set_slot(0, true, 0, WIRE_COLOR, true, 0, WIRE_COLOR)
 		graph.add_child(gn)
 	for w_any in layout.get("wires", []):
 		if typeof(w_any) == TYPE_ARRAY and w_any.size() >= 2:
 			graph.connect_node(str(w_any[0]), 0, str(w_any[1]), 0)
+
+
+func _style_graph_node(gn: GraphNode, typ: String) -> void:
+	var col: Color = Color(0.3, 0.32, 0.36)
+	if KIND_COLORS.has(typ):
+		col = KIND_COLORS[typ]
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = col
+	sb.set_corner_radius_all(4)
+	sb.content_margin_left = 8
+	sb.content_margin_right = 8
+	sb.content_margin_top = 6
+	sb.content_margin_bottom = 6
+	gn.add_theme_stylebox_override("titlebar", sb)
+	gn.add_theme_stylebox_override("titlebar_selected", sb)
+	var panel := StyleBoxFlat.new()
+	panel.bg_color = col.darkened(0.35)
+	panel.set_corner_radius_all(4)
+	panel.content_margin_left = 8
+	panel.content_margin_right = 8
+	panel.content_margin_top = 6
+	panel.content_margin_bottom = 8
+	gn.add_theme_stylebox_override("panel", panel)
+
+
+func _on_graph_connection_request(_from: StringName, _from_port: int, _to: StringName, _to_port: int) -> void:
+	pass
+
+
+func _on_graph_disconnection_request(_from: StringName, _from_port: int, _to: StringName, _to_port: int) -> void:
+	pass
+
+
+func _on_graph_delete_nodes(_nodes: Array) -> void:
+	pass
+
+
+func _inventory_credentials() -> Dictionary:
+	var worlds := get_tree().get_nodes_in_group("world")
+	if worlds.is_empty():
+		return {}
+	var w := worlds[0] as Node
+	if w != null and w.has_method("credentials_from_local_inventory"):
+		var creds: Variant = w.call("credentials_from_local_inventory")
+		if typeof(creds) == TYPE_DICTIONARY:
+			return creds
+	return {}
+
+
+func _paper_status_label() -> Label:
+	var creds := _inventory_credentials()
+	var l := Label.new()
+	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	if creds.is_empty():
+		l.text = "no credentials in inventory — you can still type keys"
+		l.add_theme_color_override("font_color", Color(0.92, 0.72, 0.32))
+	else:
+		l.text = "autopopulated from inventory (%s keys) — still editable" % str(creds.get("holder_name", "paper"))
+		l.add_theme_color_override("font_color", Color(0.55, 0.82, 0.62))
+	return l
+
+
+func _apply_inventory_to_graph() -> void:
+	var creds := _inventory_credentials()
+	if creds.is_empty():
+		return
+	if _graph_inputs.has("public_key") and _graph_inputs["public_key"] is LineEdit:
+		var pk := _graph_inputs["public_key"] as LineEdit
+		if pk.text.is_empty():
+			pk.text = str(creds.get("public_key", ""))
+	if _graph_inputs.has("private_key") and _graph_inputs["private_key"] is LineEdit:
+		var sk := _graph_inputs["private_key"] as LineEdit
+		if sk.text.is_empty():
+			sk.text = str(creds.get("private_key", ""))
+	if _graph_inputs.has("username") and _graph_inputs["username"] is LineEdit and _workspace_id == "w0":
+		var un := _graph_inputs["username"] as LineEdit
+		if un.text.is_empty():
+			un.text = str(creds.get("holder_name", ""))
 
 
 func _graph_text(id: String) -> String:

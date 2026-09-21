@@ -25,12 +25,12 @@ Windowed `godot-up` is the **host** (ENet port **24567**). A second process **jo
 # or: godot --path godot --headless -- --join 127.0.0.1:24567
 ```
 
-WASD + mouse look. **E** sit at the laptop (paper pickup is set dressing only). **Esc** stands up; the OTP **session remains** until **Exit session** on the console. One seater.
+WASD + mouse look. **E** picks up paper (autopopulates W0 / login public+private fields; still editable) or sits at the laptop. **Esc** stands up; the OTP **session remains** until **Exit session** on the console. One seater.
 
 ## Helen → Alice play (scenes 1–7)
 
 1. Power/sit. Chooser offers **King-making (W0)** — no King at node-up.
-2. Run W0 as **Helen**: username, public key (`mldsa87:…`), paper private key, PIN. Genesis mints bootstrap, G, D1–D5, this node’s EK on D2, Helen’s vault. Replay fails unless **Zeroise**.
+2. Run W0 as **Helen**: pick up her paper first so username / public / private fill (label: autopopulated from inventory). Type PIN. Graph preview shows data/info/process nodes genesis will write or start. Replay fails unless **Zeroise**.
 3. Launcher: run **W1**, type Alice’s name + **public** key. Generated PIN is shown once — tell Alice. Graph is locked (save layout is denied server-side).
 4. **Exit session** (not only Esc).
 5. **Login** as Alice: username + PIN + paper **private** key. Starts Alice’s vault. Wrong PIN / not on D1 / no key fail closed.

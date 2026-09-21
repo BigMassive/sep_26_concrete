@@ -15,6 +15,21 @@ defmodule ConcreteRuntime.BootstrapTest do
     %{dir: dir}
   end
 
+  test "W0 layout previews genesis writes, processes, and locked wires" do
+    layout = ConcreteRuntime.Workspaces.w0_layout()
+    by_id = Map.new(layout["nodes"], &{&1["id"], &1})
+
+    assert by_id["run"]["type"] == "run"
+    assert by_id["d2"]["type"] == "data"
+    assert by_id["d2"]["subtitle"] =~ "will write"
+    assert by_id["g"]["type"] == "info"
+    assert by_id["vault"]["type"] == "process"
+    assert by_id["identity"]["type"] == "process"
+    assert ["run", "d2"] in layout["wires"]
+    assert ["run", "vault"] in layout["wires"]
+    assert ["run", "identity"] in layout["wires"]
+  end
+
   test "first boot is an empty CoT — no auto-King" do
     status = ConcreteRuntime.Bootstrap.status()
     assert status.node_id == "node-1"

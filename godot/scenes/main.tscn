@@ -59,7 +59,8 @@ text = "Connecting…"
 [node name="HSep" type="HSeparator" parent="Margin/VBox"]
 layout_mode = 2
 
-[node name="ScreenHost" type="Control" parent="Margin/VBox"]
+[node name="ScreenHost" type="VBoxContainer" parent="Margin/VBox"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_vertical = 3
+theme_override_constants/separation = 8
