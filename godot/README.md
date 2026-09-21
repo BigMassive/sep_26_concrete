@@ -2,20 +2,22 @@
 
 Thin **physical-world UI** for `sep_26_concrete` ([ADR 0001](../docs/decisions/0001-lab-toolchain.md) / [0004](../docs/decisions/0004-world-state-supervisor.md) / [0009](../docs/decisions/0009-godot-scenario-worlds.md)). **Not** ground truth — talks only to OTP HTTP at `http://127.0.0.1:4000`.
 
-**Main scene:** `scenes/world.tscn` — one 3D room, desk, laptop (`node-1`), issuance tray, listen-server session. The old 2D form (`scenes/main.tscn`) is the **node console** nested in the laptop SubViewport (also `--console-only` for debug).
+**Main scene:** `scenes/world.tscn` — one 3D room, desk, laptop (`node-1`), issuance tray (set dressing), listen-server session. Nested console `scenes/main.tscn` is the node-1 screen (also `--console-only`).
+
+Helen → Alice CoT: [docs/11](../docs/11-helen-alice-cot-beats.md), coded per [docs/12](../docs/12-helen-alice-build.md). Sessions are **not** signed HTTP (ADR 0008 stage 5 later); OTP still trusts `principal_id`.
 
 ## Prerequisites
 
 ```bash
 ./scripts/lab-up.sh      # IPFS + IOTA (needed for did:iota directory / plaques)
-./scripts/node-up.sh     # OTP :4000
+./scripts/node-up.sh     # OTP :4000 — empty CoT, no auto-King
 ```
 
-Requires **Godot 4.5** on the host (`GODOT_BIN` overrides path).
+Requires **Godot 4.5** on the host (`GODOT_BIN` overrides path). Use a **blank** `lab/data/node/` (or zeroise) for the first play.
 
 ## Session (listen-server from the start)
 
-Windowed `godot-up` is the **host** (ENet port **24567**). A second process **joins** and appears as another coloured capsule. Host simulates the room; each process still calls OTP HTTP as **that body’s** principal after paper pickup.
+Windowed `godot-up` is the **host** (ENet port **24567**). A second process **joins** and appears as another coloured capsule. Host simulates the room; each process still calls OTP HTTP.
 
 ```bash
 ./scripts/godot-up.sh                          # host, windowed
@@ -23,26 +25,30 @@ Windowed `godot-up` is the **host** (ENet port **24567**). A second process **jo
 # or: godot --path godot --headless -- --join 127.0.0.1:24567
 ```
 
-WASD + mouse look. **E** pick up paper or sit. **Esc** stands up from the laptop (does not quit). One seater.
+WASD + mouse look. **E** sit at the laptop (paper pickup is set dressing only). **Esc** stands up; the OTP **session remains** until **Exit session** on the console. One seater.
 
-## Issuance vs OTP King (do not mint two Kings)
+## Helen → Alice play (scenes 1–7)
 
-`node-up` already onboards **King** in the sidecar vault (`CONCRETE_VAULT_DIR`) and mints the bootstrap cap. The 3D story still starts unkeyed: walking bodies must not mutate until they **pick up** an issuance document.
+1. Power/sit. Chooser offers **King-making (W0)** — no King at node-up.
+2. Run W0 as **Helen**: username, public key (`mldsa87:…`), paper private key, PIN. Genesis mints bootstrap, G, D1–D5, this node’s EK on D2, Helen’s vault. Replay fails unless **Zeroise**.
+3. Launcher: run **W1**, type Alice’s name + **public** key. Generated PIN is shown once — tell Alice. Graph is locked (save layout is denied server-side).
+4. **Exit session** (not only Esc).
+5. **Login** as Alice: username + PIN + paper **private** key. Starts Alice’s vault. Wrong PIN / not on D1 / no key fail closed.
+6. **Discovery**: force graph from D5[Alice]; info she may read; data markers only (no D4 bytes).
+7. Run **W2**: text, username picker for read/write, Wendy-link DID (e.g. G). Auto-links her D5. Discovery shows the new info node.
 
-**Gate:** Godot-side. First paper in a blank session **binds that body to the existing OTP King** (`GET /v1/bootstrap`) — it does **not** `POST /v1/principals` as another King. Later papers onboard other display names (colour). Unkeyed console mutates send `principal_id=unkeyed` so OTP **403**s. Seeds are not stored in `.tscn`.
+**Power off** on the console makes OTP product routes **503**. **Zeroise** re-opens King-making (full chain/D2 wipe is stubbed).
+
+Vaults are Elixir processes (comment: lab stand-in — rewrite as seL4 later). No NIFs. Paper/genesis fields may show keys; Godot does not keep seeds in `.tscn`.
 
 ## Headless peer playbook (option C)
 
-The user is a **second Godot process**, not curl:
+Phase 1 `first-login.json` (paper-as-King + plaque) is leftover. Pickup no longer keys anyone; `create_plaque` / `eve_deny` fail-fast (`superseded_step`). This beat is console-driven W0–W2; a Helen→Alice playbook is later. Until then `./scripts/godot-playbook.sh` is a **known red path**. Curl mutate is still not the user.
 
 ```bash
-./scripts/godot-up.sh                 # host already listening
-./scripts/godot-playbook.sh           # join, pick up paper, sit, create plaque, one JSON line, exit
+./scripts/godot-up.sh
+./scripts/godot-playbook.sh
 ```
-
-Playbook file: `godot/playbooks/first-login.json`. Assumes nobody has claimed the first paper yet (otherwise this body is not King and create is 403). Curl `POST /v1/info_objects` is oracle/infra, not this actor. `--debug-puppet` / same-process extra pawns are **not** implemented as the user path.
-
-Stdout ends with one JSON object, e.g. `{ "ok": true, "principal_id": "mldsa87:…", "did": "did:iota:…", "seated": true }`. Non-zero process exit on failure.
 
 ## 2D console only (debug)
 
@@ -50,9 +56,3 @@ Stdout ends with one JSON object, e.g. `{ "ok": true, "principal_id": "mldsa87:�
 godot --path godot -- --console-only
 # or open scenes/main.tscn in the editor
 ```
-
-## What the nested console can do
-
-Same HTTP dialect as before: health, bootstrap, directory **people** (data), create/advance plaque, Eve deny. In the 3D session, create/advance use **this seated body’s** principal after pickup, not “whoever OTP lists as King” unless this body collected the first paper.
-
-**Next:** Helen/Alice CoT storyboard [docs/11](../docs/11-helen-alice-cot-beats.md); implement per [docs/12](../docs/12-helen-alice-build.md).

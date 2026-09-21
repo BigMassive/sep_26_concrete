@@ -51,6 +51,10 @@ Who may save: treat as a **harness/pause menu** action from the outer lobby (and
 
 ### First login (chronology)
 
+**This beat ([11](11-helen-alice-cot-beats.md)):** the 3D tray is **set dressing**. Pickup does **not** onboard King. Keying is **W0 genesis** / **login import** on the node console. `p.keyed` means a real session principal, not paper-in-inventory.
+
+Historical v0 (0009 stages 3–4, superseded for keying):
+
 The **issuer** is a physical presence in the room (table, tray, NPC later — a static tray is enough for v0). It **gives** a **document** the body can pick up. The document goes into **inventory**. That act is the story of “I was issued keys outside the node.”
 
 Until pick-up: the body is a **camera with legs**. Sitting at the laptop might show a lock screen / “no principal” / refuse mutate. They must not succeed at `POST /v1/info_objects`.
@@ -101,8 +105,8 @@ Not in stages 1–8. Keep a comment in code: world transform ≠ belief. OTP may
 | **0** | This ADR/plan | done |
 | **1** | 3D room, desk, laptop prop, one body, **ENet (or Godot MP) listen-server**, second process can join and see two bodies | `godot-up` walks; second `godot --headless` joins and a capsule appears |
 | **2** | Proximity interact, SubViewport console = current 2D UI, Esc unsits, mouse capture | Human can refresh OTP from the laptop |
-| **3** | Issuer tray + document pickup + inventory + unkeyed mutate denied | Blank world, no paper ⇒ create plaque fails; with paper ⇒ King onboard works |
-| **4** | Headless peer playbook: join, pick up (if required), sit, one mutate or Eve-deny, JSON out | A scripted peer completes a beat without curl POST for the mutate |
+| **3** | Issuer tray + document pickup + inventory | Tray remains; **this beat:** pickup does not key. King-making is W0 ([11](11-helen-alice-cot-beats.md)) |
+| **4** | Headless peer playbook: join, pick up (inventory, not keyed), sit; plaque/Eve steps fail-fast | `create_plaque` / `eve_deny` → `superseded_step`. Helen→Alice playbook later |
 | **5** | Blank + full snapshot save/load including all personas | Round-trip a King-bound body after lab restart |
 | **6** | Outer lobby UI | Pick blank vs named save |
 | **7** | Inner lobby: spawn body without leaving the room | Second colour walks; still unkeyed until paper |

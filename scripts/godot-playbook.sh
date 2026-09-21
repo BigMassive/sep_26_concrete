@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
-# Headless Godot peer: join host, collect issuance like a human, sit, one console action.
+# Headless Godot peer: join host, act as a body (ADR 0009 option C).
+# Default playbook `first-login` is leftover Phase 1 (paper-as-King + plaque).
+# create_plaque / eve_deny fail-fast with superseded_step. Known red until a
+# Helen→Alice playbook can drive W0–W2 from the console.
 # Usage: ./scripts/godot-playbook.sh [playbook-name-or-path]
 # Host must already be listening (./scripts/godot-up.sh). OTP should be up for mutates.
 set -euo pipefail

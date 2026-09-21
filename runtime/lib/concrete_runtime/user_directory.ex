@@ -24,6 +24,13 @@ defmodule ConcreteRuntime.UserDirectory do
     GenServer.call(__MODULE__, {:publish, actor_id, username}, 60_000)
   end
 
+  def reset do
+    case Process.whereis(__MODULE__) do
+      nil -> :ok
+      _ -> GenServer.call(__MODULE__, :reset)
+    end
+  end
+
   @impl true
   def init(opts) do
     data_dir = Keyword.fetch!(opts, :data_dir)
@@ -72,6 +79,11 @@ defmodule ConcreteRuntime.UserDirectory do
     else
       {:error, _} = err -> {:reply, err, s}
     end
+  end
+
+  def handle_call(:reset, _from, s) do
+    persist!(s.path, [])
+    {:reply, :ok, %{s | records: []}}
   end
 
   defp write_record(subject) do
@@ -195,7 +207,9 @@ defmodule ConcreteRuntime.UserDirectory do
 
   defp iota_name(rec) do
     case Map.get(rec, :iota_did) do
-      did when is_binary(did) and did != "" -> did
+      did when is_binary(did) and did != "" ->
+        did
+
       _ ->
         did = Map.get(rec, :did)
 

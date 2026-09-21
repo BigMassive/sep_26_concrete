@@ -8,6 +8,7 @@ defmodule ConcreteRuntime.API do
   plug(:match)
   plug(:fetch_query_params)
   plug(Plug.Parsers, parsers: [:json], json_decoder: Jason)
+  plug(:require_powered)
   plug(:dispatch)
 
   get "/health" do
@@ -116,26 +117,280 @@ defmodule ConcreteRuntime.API do
     send_json(conn, 200, ConcreteRuntime.Bootstrap.status())
   end
 
-  post "/v1/principals" do
-    name = conn.body_params["display_name"] || conn.body_params["name"]
+  get "/v1/lab" do
+    send_json(conn, 200, ConcreteRuntime.Lab.status())
+  end
+
+  post "/v1/lab/power" do
+    on = conn.body_params["on"]
 
     cond do
-      not is_binary(name) or String.trim(name) == "" ->
-        send_json(conn, 400, %{error: "display_name required"})
+      not is_boolean(on) ->
+        send_json(conn, 400, %{error: "on boolean required"})
 
       true ->
-        case ConcreteRuntime.Bootstrap.ensure_principal(String.trim(name)) do
-          {:ok, principal} ->
-            status = ConcreteRuntime.Bootstrap.status()
+        ConcreteRuntime.Lab.set_powered(on)
+        send_json(conn, 200, ConcreteRuntime.Lab.status())
+    end
+  end
 
-            send_json(conn, 200, %{
-              principal: Map.take(principal, [:id, :display_name, :role, :public_key]),
-              has_bootstrap_capability:
-                Enum.any?(status.principals, &(&1.id == principal.id and &1.has_bootstrap_capability))
+  post "/v1/lab/zeroise" do
+    ConcreteRuntime.Workspaces.zeroise()
+    send_json(conn, 200, ConcreteRuntime.Lab.status())
+  end
+
+  post "/v1/genesis" do
+    case ConcreteRuntime.Workspaces.genesis(conn.body_params) do
+      {:ok, result} ->
+        send_json(conn, 201, result)
+
+      {:error, :genesis_replay} ->
+        send_json(conn, 409, %{error: "genesis_replay"})
+
+      {:error, :node_powered_off} ->
+        send_json(conn, 503, %{error: "node_powered_off"})
+
+      {:error, :capability_denied} ->
+        send_json(conn, 403, %{error: "capability_denied"})
+
+      {:error, reason} ->
+        send_iota_or_generic_error(conn, reason)
+    end
+  end
+
+  post "/v1/session/login" do
+    case ConcreteRuntime.Workspaces.login(conn.body_params) do
+      {:ok, result} ->
+        send_json(conn, 200, result)
+
+      {:error, :session_occupied} ->
+        send_json(conn, 409, %{error: "session_occupied", detail: "Exit session first"})
+
+      {:error, :pin_mismatch} ->
+        send_json(conn, 403, %{error: "pin_mismatch"})
+
+      {:error, :not_on_d1} ->
+        send_json(conn, 403, %{error: "not_on_d1"})
+
+      {:error, :unknown_username} ->
+        send_json(conn, 403, %{error: "unknown_username"})
+
+      {:error, :missing_private_key} ->
+        send_json(conn, 400, %{error: "private_key required"})
+
+      {:error, :capability_denied} ->
+        send_json(conn, 403, %{error: "capability_denied"})
+
+      {:error, reason} ->
+        send_json(conn, 403, %{error: inspect(reason)})
+    end
+  end
+
+  post "/v1/session/logout" do
+    actor_id = conn.body_params["principal_id"]
+
+    cond do
+      not is_binary(actor_id) ->
+        send_json(conn, 400, %{error: "principal_id required"})
+
+      true ->
+        case ConcreteRuntime.Workspaces.logout(actor_id) do
+          :ok -> send_json(conn, 200, ConcreteRuntime.Session.current())
+          {:error, :not_current_session} -> send_json(conn, 403, %{error: "not_current_session"})
+        end
+    end
+  end
+
+  get "/v1/session" do
+    send_json(conn, 200, ConcreteRuntime.Session.current())
+  end
+
+  get "/v1/workspaces" do
+    actor_id = conn.query_params["principal_id"]
+
+    cond do
+      not is_binary(actor_id) ->
+        send_json(conn, 400, %{error: "principal_id query param required"})
+
+      true ->
+        case ConcreteRuntime.Workspaces.list(actor_id) do
+          {:ok, list} -> send_json(conn, 200, %{workspaces: list})
+          {:error, :capability_denied} -> send_json(conn, 403, %{error: "capability_denied"})
+        end
+    end
+  end
+
+  get "/v1/workspace" do
+    actor_id = conn.query_params["principal_id"]
+    id = conn.query_params["id"]
+
+    cond do
+      not is_binary(actor_id) or not is_binary(id) ->
+        send_json(conn, 400, %{error: "principal_id and id query params required"})
+
+      true ->
+        case ConcreteRuntime.Workspaces.get(actor_id, id) do
+          {:ok, ws} -> send_json(conn, 200, ws)
+          {:error, :not_found} -> send_json(conn, 404, %{error: "not_found"})
+          {:error, :capability_denied} -> send_json(conn, 403, %{error: "capability_denied"})
+        end
+    end
+  end
+
+  post "/v1/workspaces/run" do
+    actor_id = conn.body_params["principal_id"]
+    id = conn.body_params["id"] || conn.body_params["workspace_id"]
+    inputs = conn.body_params["inputs"] || conn.body_params
+
+    cond do
+      not is_binary(actor_id) or not is_binary(id) ->
+        send_json(conn, 400, %{error: "principal_id and id required"})
+
+      id == "w0" ->
+        send_json(conn, 400, %{error: "use POST /v1/genesis for W0"})
+
+      id == "w1" ->
+        case ConcreteRuntime.Workspaces.introduce_user(actor_id, inputs) do
+          {:ok, result} -> send_json(conn, 201, result)
+          {:error, :capability_denied} -> send_json(conn, 403, %{error: "capability_denied"})
+          {:error, :vault_unusable} -> send_json(conn, 403, %{error: "vault_unusable"})
+          {:error, :graph_locked} -> send_json(conn, 403, %{error: "graph_locked"})
+          {:error, reason} -> send_iota_or_generic_error(conn, reason)
+        end
+
+      id == "w2" ->
+        case ConcreteRuntime.Workspaces.write_info(actor_id, inputs) do
+          {:ok, result} -> send_json(conn, 201, result)
+          {:error, :capability_denied} -> send_json(conn, 403, %{error: "capability_denied"})
+          {:error, :vault_unusable} -> send_json(conn, 403, %{error: "vault_unusable"})
+          {:error, :graph_locked} -> send_json(conn, 403, %{error: "graph_locked"})
+          {:error, reason} -> send_iota_or_generic_error(conn, reason)
+        end
+
+      true ->
+        send_json(conn, 404, %{error: "unknown_workspace"})
+    end
+  end
+
+  post "/v1/workspaces/save" do
+    actor_id = conn.body_params["principal_id"]
+    id = conn.body_params["id"] || conn.body_params["workspace_id"]
+    layout = conn.body_params["layout"] || %{}
+
+    cond do
+      not is_binary(actor_id) or not is_binary(id) ->
+        send_json(conn, 400, %{error: "principal_id and id required"})
+
+      true ->
+        case ConcreteRuntime.Workspaces.save_layout(actor_id, id, layout) do
+          {:error, :graph_locked} ->
+            send_json(conn, 403, %{
+              error: "graph_locked",
+              detail: "GraphEdit cannot widen authority"
             })
 
+          {:error, :not_found} ->
+            send_json(conn, 404, %{error: "not_found"})
+
+          {:error, :capability_denied} ->
+            send_json(conn, 403, %{error: "capability_denied"})
+
+          other ->
+            send_json(conn, 400, %{error: inspect(other)})
+        end
+    end
+  end
+
+  get "/v1/discovery" do
+    actor_id = conn.query_params["principal_id"]
+
+    cond do
+      not is_binary(actor_id) ->
+        send_json(conn, 400, %{error: "principal_id query param required"})
+
+      true ->
+        case ConcreteRuntime.Discovery.walk(actor_id) do
+          {:ok, graph} -> send_json(conn, 200, graph)
+          {:error, :capability_denied} -> send_json(conn, 403, %{error: "capability_denied"})
+        end
+    end
+  end
+
+  get "/v1/data_objects" do
+    actor_id = conn.query_params["principal_id"]
+
+    cond do
+      not is_binary(actor_id) ->
+        send_json(conn, 400, %{error: "principal_id query param required"})
+
+      true ->
+        case ConcreteRuntime.DataObjects.list_markers(actor_id) do
+          {:ok, records} -> send_json(conn, 200, %{kind: "data", records: records})
+          {:error, :capability_denied} -> send_json(conn, 403, %{error: "capability_denied"})
+          {:error, reason} -> send_iota_or_generic_error(conn, reason)
+        end
+    end
+  end
+
+  get "/v1/data_object" do
+    actor_id = conn.query_params["principal_id"]
+    did = conn.query_params["did"]
+
+    cond do
+      not is_binary(actor_id) or not is_binary(did) ->
+        send_json(conn, 400, %{error: "principal_id and did query params required"})
+
+      true ->
+        case ConcreteRuntime.DataObjects.get(actor_id, did) do
+          {:ok, rec} -> send_json(conn, 200, rec)
+          {:error, :not_found} -> send_json(conn, 404, %{error: "not_found"})
+          {:error, :capability_denied} -> send_json(conn, 403, %{error: "capability_denied"})
+          {:error, reason} -> send_iota_or_generic_error(conn, reason)
+        end
+    end
+  end
+
+  get "/v1/capabilities" do
+    actor_id = conn.query_params["principal_id"]
+
+    cond do
+      not is_binary(actor_id) ->
+        send_json(conn, 400, %{error: "principal_id query param required"})
+
+      true ->
+        send_json(conn, 200, %{capabilities: ConcreteRuntime.Bootstrap.capabilities(actor_id)})
+    end
+  end
+
+  post "/v1/principals" do
+    actor_id = conn.body_params["principal_id"]
+
+    name =
+      conn.body_params["display_name"] || conn.body_params["name"] || conn.body_params["username"]
+
+    public_key = conn.body_params["public_key"]
+
+    cond do
+      not is_binary(actor_id) or not is_binary(name) or String.trim(name) == "" or
+          not is_binary(public_key) ->
+        send_json(conn, 400, %{error: "principal_id, display_name, and public_key required"})
+
+      true ->
+        case ConcreteRuntime.Workspaces.introduce_user(actor_id, %{
+               username: String.trim(name),
+               public_key: public_key
+             }) do
+          {:ok, result} ->
+            send_json(conn, 200, result)
+
+          {:error, :capability_denied} ->
+            send_json(conn, 403, %{error: "capability_denied"})
+
+          {:error, :vault_unusable} ->
+            send_json(conn, 403, %{error: "vault_unusable"})
+
           {:error, reason} ->
-            send_json(conn, 502, %{error: "onboard_failed", detail: inspect(reason)})
+            send_iota_or_generic_error(conn, reason)
         end
     end
   end
@@ -234,18 +489,27 @@ defmodule ConcreteRuntime.API do
   end
 
   get "/v1/info_objects" do
-    send_json(conn, 200, %{objects: ConcreteRuntime.InfoObjects.list()})
+    actor_id = conn.query_params["principal_id"]
+
+    cond do
+      not is_binary(actor_id) ->
+        send_json(conn, 400, %{error: "principal_id query param required"})
+
+      true ->
+        send_json(conn, 200, %{objects: ConcreteRuntime.InfoObjects.list(actor_id)})
+    end
   end
 
   get "/v1/info_object" do
+    actor_id = conn.query_params["principal_id"]
     did = conn.query_params["did"]
 
     cond do
-      not is_binary(did) ->
-        send_json(conn, 400, %{error: "did query param required"})
+      not is_binary(actor_id) or not is_binary(did) ->
+        send_json(conn, 400, %{error: "principal_id and did query params required"})
 
       true ->
-        case ConcreteRuntime.InfoObjects.get(did) do
+        case ConcreteRuntime.InfoObjects.get(actor_id, did) do
           {:ok, obj} -> send_json(conn, 200, obj)
           {:error, :not_found} -> send_json(conn, 404, %{error: "not_found"})
           {:error, reason} -> send_iota_or_generic_error(conn, reason)
@@ -271,6 +535,9 @@ defmodule ConcreteRuntime.API do
 
           {:error, :capability_denied} ->
             send_json(conn, 403, %{error: "capability_denied"})
+
+          {:error, :vault_unusable} ->
+            send_json(conn, 403, %{error: "vault_unusable"})
 
           {:error, {:ipfs_unavailable, reason}} ->
             send_json(conn, 503, %{error: "ipfs_unavailable", detail: inspect(reason)})
@@ -301,6 +568,9 @@ defmodule ConcreteRuntime.API do
           {:error, :capability_denied} ->
             send_json(conn, 403, %{error: "capability_denied"})
 
+          {:error, :vault_unusable} ->
+            send_json(conn, 403, %{error: "vault_unusable"})
+
           {:error, :not_found} ->
             send_json(conn, 404, %{error: "not_found"})
 
@@ -315,6 +585,19 @@ defmodule ConcreteRuntime.API do
 
   match _ do
     send_json(conn, 404, %{error: "not_found"})
+  end
+
+  defp require_powered(conn, _opts) do
+    path = conn.request_path || ""
+
+    if String.starts_with?(path, "/v1/lab") or ConcreteRuntime.Lab.powered?() do
+      conn
+    else
+      conn
+      |> put_resp_content_type("application/json")
+      |> send_resp(503, Jason.encode!(%{error: "node_powered_off"}))
+      |> halt()
+    end
   end
 
   defp send_iota_or_generic_error(conn, reason) do
@@ -343,6 +626,9 @@ defmodule ConcreteRuntime.API do
 
       {:iota_resolve_failed, detail} ->
         send_json(conn, 502, %{error: "iota_resolve_failed", detail: inspect(detail)})
+
+      other when is_atom(other) ->
+        send_json(conn, 400, %{error: Atom.to_string(other)})
 
       other ->
         send_json(conn, 500, %{error: inspect(other)})

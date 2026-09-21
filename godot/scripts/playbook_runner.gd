@@ -52,9 +52,9 @@ func _do_step(step: String) -> String:
 		"wait_console_ready":
 			return await _step_console_ready()
 		"create_plaque":
-			return await _step_create()
+			return "superseded_step:create_plaque"
 		"eve_deny":
-			return await _step_eve_deny()
+			return "superseded_step:eve_deny"
 		_:
 			return "unknown_step:%s" % step
 
@@ -84,7 +84,7 @@ func _step_pickup() -> String:
 	var deadline := Time.get_ticks_msec() + 12000
 	while Time.get_ticks_msec() < deadline:
 		p = world.local_player()
-		if p and p.keyed:
+		if p and p.inventory.size() > 0:
 			p.bot_move = Vector3.ZERO
 			return ""
 		p.bot_interact = true
@@ -120,35 +120,6 @@ func _step_console_ready() -> String:
 			return ""
 		await get_tree().create_timer(0.2).timeout
 	return "console_timeout"
-
-
-func _step_create() -> String:
-	if world.console == null:
-		return "no_console"
-	world.console.playbook_create()
-	var deadline := Time.get_ticks_msec() + 30000
-	while Time.get_ticks_msec() < deadline:
-		if world.console.last_tag == "create" and world.console.console_idle():
-			if world.console.last_code >= 400:
-				return "create_http_%s" % world.console.last_code
-			_result["did"] = world.console.current_did
-			return ""
-		await get_tree().create_timer(0.2).timeout
-	return "create_timeout"
-
-
-func _step_eve_deny() -> String:
-	if world.console == null:
-		return "no_console"
-	world.console.playbook_eve_deny()
-	var deadline := Time.get_ticks_msec() + 30000
-	while Time.get_ticks_msec() < deadline:
-		if world.console.last_tag == "advance_eve" and world.console.console_idle():
-			if world.console.last_code == 403:
-				return ""
-			return "eve_expected_403_got_%s" % world.console.last_code
-		await get_tree().create_timer(0.2).timeout
-	return "eve_deny_timeout"
 
 
 func _steer_to(target: Vector3, stop_dist: float, timeout_ms: int) -> String:

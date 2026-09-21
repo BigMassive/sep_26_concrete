@@ -14,7 +14,10 @@ defmodule ConcreteRuntime.InfoObjectsIotaTest do
 
   defmodule CreateWithoutOnChainHead do
     def configured?, do: true
-    def create_and_publish(_opts), do: {:ok, %{did: "did:iota:lab:0x1", identity_object_id: "0x1"}}
+
+    def create_and_publish(_opts),
+      do: {:ok, %{did: "did:iota:lab:0x1", identity_object_id: "0x1"}}
+
     def require_on_chain_head(_did, _cid), do: {:error, {:iota_head_not_on_chain, "otp_cache"}}
   end
 
@@ -179,12 +182,16 @@ defmodule ConcreteRuntime.InfoObjectsIotaTest do
     refute Map.has_key?(indexed, :head_cid)
     refute Map.has_key?(indexed, :content_cid)
     refute Map.has_key?(indexed, :did_doc_cid)
+
     assert indexed == %{
              did: "did:iota:lab:0x1",
              iota_did: "did:iota:lab:0x1",
              identity_object_id: "0x1",
              controller_cap_id: "0xcap",
-             label: "plaque"
+             label: "plaque",
+             read_list: [],
+             write_list: [],
+             links: []
            }
   end
 

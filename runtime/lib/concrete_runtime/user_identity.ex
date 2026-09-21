@@ -79,7 +79,11 @@ defmodule ConcreteRuntime.UserIdentity do
     root = repo_root()
     script = Path.join(root, "scripts/user-identity.py")
     venv = Path.join(root, "lab/.venv/bin/python")
-    python = System.get_env("CONCRETE_USER_IDENTITY_PYTHON") || if(File.exists?(venv), do: venv, else: "python3")
+
+    python =
+      System.get_env("CONCRETE_USER_IDENTITY_PYTHON") ||
+        if(File.exists?(venv), do: venv, else: "python3")
+
     {python, script}
   end
 

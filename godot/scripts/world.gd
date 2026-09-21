@@ -7,14 +7,11 @@ extends Node3D
 const SESSION_PORT := 24567
 const PLAYER_SCENE := preload("res://scenes/player.tscn")
 const CONSOLE_SCENE := preload("res://scenes/main.tscn")
-const OTP_BASE := "http://127.0.0.1:4000"
 const SIT_RANGE := 2.4
 const PICKUP_RANGE := 1.8
 
-## OTP already onboards King at node-up (Bootstrap.fresh_bootstrap! / sidecar vault).
-## Chronology gate is Godot-side: unkeyed bodies must not use that principal_id.
-## First paper binds this body to the existing King key — we do not POST a second King.
-## Later papers POST /v1/principals (Eve, colour-named users). Custody stays CONCRETE_VAULT_DIR.
+## OTP is ground truth. Paper tray is set dressing this beat (docs/11): pickup
+## does not onboard King. Keying is W0 genesis / login import on the console.
 
 @onready var players_root: Node3D = $Players
 @onready var spawner: MultiplayerSpawner = $MultiplayerSpawner
@@ -29,7 +26,6 @@ var join_address: String = ""
 var playbook_path: String = ""
 var console_only: bool = false
 var seated_peer_id: int = 0
-var king_paper_claimed: bool = false
 var console: NodeConsole = null
 var documents: Dictionary = {}
 var laptop_pos: Vector3 = Vector3(3.0, 0.85, -4.0)
@@ -79,6 +75,7 @@ func _parse_args() -> void:
 func _setup_console() -> void:
 	console = CONSOLE_SCENE.instantiate() as NodeConsole
 	console.use_session_actor = true
+	console.session_changed.connect(_on_console_session)
 	subviewport.add_child(console)
 	seated_layer.visible = false
 
@@ -215,7 +212,7 @@ func _update_hud() -> void:
 	var near_doc := _nearest_free_document(p.global_position)
 	var d_lap := _xz_dist(p.global_position, laptop_pos)
 	if near_doc != "" and _xz_dist(p.global_position, documents[near_doc].position) < PICKUP_RANGE:
-		prompt_label.text = "E · pick up issuance document"
+		prompt_label.text = "E · pick up paper (set dressing)"
 	elif d_lap < SIT_RANGE:
 		if seated_peer_id != 0 and seated_peer_id != p.peer_id:
 			prompt_label.text = "Laptop occupied (one seater)"
@@ -257,19 +254,16 @@ func _server_try_interact(player: Player) -> void:
 func _server_pickup(peer_id: int, doc_id: String) -> void:
 	if not documents.has(doc_id) or documents[doc_id].taken:
 		return
-	var first_king := not king_paper_claimed
-	if first_king:
-		king_paper_claimed = true
 	documents[doc_id].taken = true
 	documents[doc_id].taken_by = peer_id
 	var mesh: Node3D = documents[doc_id].mesh
 	if mesh:
 		mesh.visible = false
-	apply_pickup.rpc(doc_id, peer_id, first_king, Player.display_name_for_peer(peer_id))
+	apply_pickup.rpc(doc_id, peer_id)
 
 
 @rpc("authority", "reliable", "call_local")
-func apply_pickup(doc_id: String, by_peer: int, first_king: bool, display_name: String) -> void:
+func apply_pickup(doc_id: String, by_peer: int) -> void:
 	if documents.has(doc_id):
 		documents[doc_id].taken = true
 		documents[doc_id].taken_by = by_peer
@@ -278,51 +272,17 @@ func apply_pickup(doc_id: String, by_peer: int, first_king: bool, display_name: 
 			mesh.visible = false
 	if by_peer != multiplayer.get_unique_id():
 		return
-	_bind_after_pickup(doc_id, first_king, display_name)
-
-
-func _bind_after_pickup(doc_id: String, first_king: bool, display_name: String) -> void:
-	var http := HTTPRequest.new()
-	add_child(http)
-	var principal := ""
-	if first_king:
-		http.request(OTP_BASE + "/v1/bootstrap")
-		var completed: Array = await http.request_completed
-		var code: int = completed[1]
-		var body: PackedByteArray = completed[3]
-		var parsed: Variant = JSON.parse_string(body.get_string_from_utf8())
-		if code == 200 and typeof(parsed) == TYPE_DICTIONARY:
-			principal = str(parsed.get("king", {}).get("id", ""))
-		else:
-			printerr("Issuance bind (King) failed: OTP %s" % code)
-	else:
-		var payload := JSON.stringify({"display_name": display_name})
-		http.request(
-			OTP_BASE + "/v1/principals",
-			PackedStringArray(["Content-Type: application/json"]),
-			HTTPClient.METHOD_POST,
-			payload
-		)
-		var completed: Array = await http.request_completed
-		var code: int = completed[1]
-		var body: PackedByteArray = completed[3]
-		var parsed: Variant = JSON.parse_string(body.get_string_from_utf8())
-		if code < 400 and typeof(parsed) == TYPE_DICTIONARY:
-			principal = str(parsed.get("principal", {}).get("id", ""))
-		else:
-			printerr("Issuance onboard failed: OTP %s" % code)
-	http.queue_free()
 	var p := local_player()
 	if p == null:
 		return
 	var items := p.inventory.duplicate()
 	if not items.has(doc_id):
 		items.append(doc_id)
-	p.apply_bind(principal, items)
+	p.apply_bind(p.principal_id, items)
 	if multiplayer.is_server():
-		_server_store_bind(multiplayer.get_unique_id(), principal, items)
+		_server_store_bind(multiplayer.get_unique_id(), p.principal_id, items)
 	else:
-		report_bind.rpc_id(1, principal, items)
+		report_bind.rpc_id(1, p.principal_id, items)
 
 
 @rpc("any_peer", "reliable")
@@ -392,13 +352,21 @@ func seat_changed(peer_id: int) -> void:
 		_leave_console()
 
 
+func _on_console_session(principal_id: String, username: String) -> void:
+	var p := local_player()
+	if p == null:
+		return
+	p.apply_bind(principal_id, p.inventory)
+	if not username.is_empty():
+		p.set_meta("session_username", username)
+
+
 func _enter_console() -> void:
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	seated_layer.visible = true
-	var p := local_player()
-	if p and console:
-		console.bind_actor(p.principal_id, p.keyed)
-	hint_label.text = "Esc · stand up  ·  mouse/keyboard drive node-1"
+	if console:
+		console.bind_actor("", false)
+	hint_label.text = "Esc · stand up (session remains)  ·  Exit session on the console to logout"
 
 
 func _leave_console() -> void:
@@ -463,7 +431,7 @@ func _build_room() -> void:
 	_spawn_document(room, "paper-2", Vector3(-2.95, 0.62, -3.95), Color(0.9, 0.88, 0.78))
 
 	var tray_tag := Label3D.new()
-	tray_tag.text = "Issuance tray\n(pick up — vault stays sidecar)"
+	tray_tag.text = "Issuance tray\n(set dressing — keying is W0 / login)"
 	tray_tag.position = Vector3(-3.2, 1.15, -4.0)
 	tray_tag.font_size = 28
 	tray_tag.billboard = BaseMaterial3D.BILLBOARD_ENABLED
