@@ -6,7 +6,8 @@ Phase 1 vertical slice stays **frozen**. Follow **11** if 0008/0009 text conflic
 
 ## Repo facts
 
-- Path: `sep_26_concrete`. Godot **4.5**, main scene `godot/scenes/world.tscn`, console `godot/scenes/main.tscn` in SubViewport. Listen **:24567**. OTP `./scripts/node-up.sh` → `http://127.0.0.1:4000`. Lab: `./scripts/lab-up.sh`.
+- Path: `sep_26_concrete`. Godot **4.7**, main scene `godot/scenes/world.tscn`, console `godot/scenes/main.tscn` in a texture rendered at the panel size times the display scale (font 16, graph zoom 1, one-pixel wires, block positions at 1.5×). Listen **:24567**. OTP `./scripts/node-up.sh` → `http://127.0.0.1:4000`. Lab: `./scripts/lab-up.sh`.
+- Godot AI (`godot/addons/godot_ai`, MIT) connects Cursor to the **open editor**. Use it to see and drive the running game. Details: [godot/README.md](../godot/README.md).
 - Godot talks **only** to OTP HTTP. No seeds in `.tscn`.
 - Today: `Bootstrap.fresh_bootstrap!` onboards **King** at start; `authorize/2` is binary `bootstrap_holders`; `POST /v1/principals` is **uncapped**; info objects have **no** links facet or per-object read/write lists. `CONCRETE_VAULT_DIR` sidecar is leftover harness.
 

@@ -22,10 +22,12 @@ const LOCAL_AVATAR_BASE := 1000
 @onready var session_label: Label = %Session
 @onready var seated_layer: Control = %SeatedLayer
 @onready var subviewport: SubViewport = %ConsoleViewport
+@onready var console_display: TextureRect = %ConsoleDisplay
 @onready var hint_label: Label = %SeatedHint
 @onready var persona_badge: Label = %PersonaBadge
 @onready var persona_edge: VBoxContainer = %PersonaEdge
 @onready var persona_layer: Control = %PersonaLayer
+@onready var fullscreen_button: Button = %FullscreenButton
 
 var join_address: String = ""
 var playbook_path: String = ""
@@ -53,6 +55,8 @@ func _ready() -> void:
 	_build_room()
 	_setup_console()
 	_setup_persona_hud()
+	fullscreen_button.pressed.connect(_toggle_fullscreen)
+	_sync_fullscreen_button()
 	_setup_multiplayer()
 	if not playbook_path.is_empty() or OS.has_feature("headless"):
 		_ensure_persona("Helen")
@@ -96,7 +100,77 @@ func _setup_console() -> void:
 	console.use_session_actor = true
 	console.session_changed.connect(_on_console_session)
 	subviewport.add_child(console)
+	subviewport.handle_input_locally = false
+	console_display.texture = subviewport.get_texture()
+	console_display.mouse_filter = Control.MOUSE_FILTER_STOP
+	console_display.focus_mode = Control.FOCUS_CLICK
+	console_display.gui_input.connect(_on_console_display_input)
+	if not console_display.resized.is_connected(_fit_console_viewport):
+		console_display.resized.connect(_fit_console_viewport)
+	if not get_window().size_changed.is_connected(_fit_console_viewport):
+		get_window().size_changed.connect(_fit_console_viewport)
 	seated_layer.visible = false
+	call_deferred("_fit_console_viewport")
+
+
+func _console_device_scale() -> float:
+	var scale := 1.0
+	var screen := DisplayServer.window_get_current_screen()
+	var screen_scale := DisplayServer.screen_get_scale(screen)
+	if screen_scale > scale:
+		scale = screen_scale
+	var content := get_window().content_scale_factor
+	if content > scale:
+		scale = content
+	var logical := get_viewport().get_visible_rect().size
+	var window_px := Vector2(DisplayServer.window_get_size())
+	if logical.x > 1.0 and logical.y > 1.0:
+		var ratio := minf(window_px.x / logical.x, window_px.y / logical.y)
+		if ratio > scale:
+			scale = ratio
+	return maxf(scale, 1.0)
+
+
+func _console_logical_size() -> Vector2:
+	var logical := console_display.size
+	if logical.x >= 2.0 and logical.y >= 2.0:
+		return logical
+	var root := get_viewport().get_visible_rect().size
+	return Vector2(
+		root.x - console_display.offset_left + console_display.offset_right,
+		root.y - console_display.offset_top + console_display.offset_bottom
+	)
+
+
+func _fit_console_viewport() -> void:
+	if subviewport == null or console_display == null:
+		return
+	var logical := _console_logical_size()
+	if logical.x < 2.0 or logical.y < 2.0:
+		return
+	var scale := _console_device_scale()
+	var px := Vector2i(ceili(logical.x * scale), ceili(logical.y * scale))
+	var layout := Vector2i(maxi(1, roundi(logical.x)), maxi(1, roundi(logical.y)))
+	if subviewport.size == px and subviewport.size_2d_override == layout:
+		return
+	subviewport.size_2d_override = layout
+	subviewport.size_2d_override_stretch = true
+	subviewport.size = px
+	print("console viewport %s layout %s scale %.3f" % [px, layout, scale])
+
+
+func _on_console_display_input(event: InputEvent) -> void:
+	var outgoing := event
+	if event is InputEventMouse or event is InputEventScreenTouch or event is InputEventScreenDrag:
+		outgoing = event.duplicate()
+		var scale := _console_device_scale()
+		outgoing.position *= scale
+		if outgoing is InputEventMouse:
+			outgoing.global_position *= scale
+	if event is InputEventMouseButton and event.pressed:
+		console_display.grab_focus()
+	subviewport.push_input(outgoing)
+	console_display.accept_event()
 
 
 func _setup_multiplayer() -> void:
@@ -207,6 +281,7 @@ func _player_for_persona(name: String) -> Player:
 
 
 func _process(_delta: float) -> void:
+	_fit_console_viewport()
 	_update_hud()
 	if not multiplayer.is_server():
 		return
@@ -222,7 +297,33 @@ func _process(_delta: float) -> void:
 			_server_try_interact(child)
 
 
+func _console_text_focused() -> bool:
+	if subviewport == null:
+		return false
+	return subviewport.gui_get_focus_owner() is LineEdit
+
+
+func _forward_console_key(event: InputEvent) -> bool:
+	# The console is a texture. Mouse clicks are pushed from the display;
+	# keystrokes stay on this window unless they are pushed too. Without
+	# that, the W0 PIN field (and every other console field) cannot be typed
+	# into, including after a fullscreen toggle moves window focus.
+	if not seated_layer.visible or persona_landing_open() or subviewport == null:
+		return false
+	if not (event is InputEventKey or event is InputEventShortcut):
+		return false
+	if event is InputEventKey and event.keycode == KEY_ESCAPE:
+		return false
+	if event is InputEventKey and event.keycode == KEY_G and event.pressed and not event.echo and not _console_text_focused():
+		return false
+	subviewport.push_input(event.duplicate(), true)
+	get_viewport().set_input_as_handled()
+	return true
+
+
 func _input(event: InputEvent) -> void:
+	if _forward_console_key(event):
+		return
 	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_ESCAPE:
 		if persona_landing_open():
 			if not active_persona_name.is_empty():
@@ -243,6 +344,8 @@ func _input(event: InputEvent) -> void:
 			get_viewport().set_input_as_handled()
 	if event is InputEventMouseButton and event.pressed and not _local_is_seated() and not persona_landing_open():
 		if Input.mouse_mode != Input.MOUSE_MODE_CAPTURED:
+			if get_viewport().gui_get_hovered_control() == fullscreen_button:
+				return
 			Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 
 
@@ -251,7 +354,24 @@ func _local_is_seated() -> bool:
 	return p != null and p.seated
 
 
+func _toggle_fullscreen() -> void:
+	var win := get_window()
+	var full := win.mode == Window.MODE_FULLSCREEN or win.mode == Window.MODE_EXCLUSIVE_FULLSCREEN
+	win.mode = Window.MODE_WINDOWED if full else Window.MODE_FULLSCREEN
+	_sync_fullscreen_button()
+	_fit_console_viewport()
+
+
+func _sync_fullscreen_button() -> void:
+	if fullscreen_button == null:
+		return
+	var mode := get_window().mode
+	var full := mode == Window.MODE_FULLSCREEN or mode == Window.MODE_EXCLUSIVE_FULLSCREEN
+	fullscreen_button.text = "Exit full screen" if full else "Enter full screen"
+
+
 func _update_hud() -> void:
+	_sync_fullscreen_button()
 	_refresh_persona_badge()
 	var p := controlled_player()
 	if persona_landing_open():
@@ -538,6 +658,7 @@ func _on_console_session(principal_id: String, username: String) -> void:
 func _enter_console() -> void:
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	seated_layer.visible = true
+	_fit_console_viewport()
 	if console:
 		console.bind_actor("", false)
 	hint_label.text = "Esc · stand up (session remains)  ·  Exit session on the console to logout"

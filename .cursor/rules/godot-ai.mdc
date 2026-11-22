@@ -1,0 +1,10 @@
+---
+description: Use the Godot AI editor connection when changing the Godot veneer
+alwaysApply: true
+---
+
+# Godot AI
+
+The Godot veneer has the free MIT plugin Godot AI (`godot/addons/godot_ai`). It connects Cursor to the open Godot editor: scene, undoable edits, play, input, logs, and a screenshot of the running game. Prefer it over editing blind and relaunching when the tools are available.
+
+The editor has to be open. `./scripts/godot-up.sh` alone is not connected. The shared client entry is `.cursor/mcp.json` (telemetry off). Setup is in `godot/README.md` under "Godot AI (editor connection)". A new machine still needs `uv` on the path and one Cursor reload.

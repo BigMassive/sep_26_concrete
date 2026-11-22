@@ -24,7 +24,7 @@ This plan is how we grow Godot into that surface **without** making Godot the le
 
 ## What is already in the repo (do not throw away)
 
-- `godot/` — Godot **4.5**, main scene `res://scenes/main.tscn`, script `godot/scripts/main.gd`. 2D Control UI: health, bootstrap, directory people, plaque create/advance, Eve deny. `HTTPRequest` sequential; principal ids are huge `mldsa87:…` strings (truncate for labels).
+- `godot/` — Godot **4.7**, main scene `res://scenes/main.tscn`, script `godot/scripts/main.gd`. 2D Control UI: health, bootstrap, directory people, plaque create/advance, Eve deny. `HTTPRequest` sequential; principal ids are huge `mldsa87:…` strings (truncate for labels).
 - `scripts/godot-up.sh` — host Godot binary, `--path godot`.
 - `runtime/` — Bandit API, Bootstrap, InfoObjects, UserDirectory, UserIdentity sidecar.
 - `scripts/node-up.sh` — OTP `:4000`, vault dir, `lab/.venv` for dilithium-py.
@@ -74,6 +74,8 @@ Keyed vs unkeyed is **inventory of the issuance document**, not “did Godot dra
 ### Console
 
 Interact on the laptop (E / proximity). Mouse captured to the SubViewport. Keyboard goes to LineEdits in the nested UI. **Esc** unsits, releases capture, body walks again. One seater. First laptop always `node-1` `:4000` until a second node exists.
+
+The console is a texture the size of the laptop panel multiplied by the display scale. Controls are laid out at the panel size and rasterised into that texture. GraphEdit uses font 16 and zoom 1. Wires are a one-pixel core (the engine's own stroke is a four-pixel rim). Stored block positions are shown at 1.5× so the blocks have a moderate gap on every workspace. Typing is forwarded into the console texture, so the W0 PIN and the other fields keep working across fullscreen and resize. A fixed low-resolution viewport stretched up to the panel is blurry on a high-density screen.
 
 Reuse `main.gd` logic as the console (move under `godot/console/` or instance the existing scene in a SubViewport). Do not fork a second HTTP dialect.
 

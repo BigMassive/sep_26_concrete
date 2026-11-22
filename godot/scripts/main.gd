@@ -6,9 +6,11 @@ extends Control
 
 const BASE := "http://127.0.0.1:4000"
 const WIRE_COLOR := Color(0.62, 0.66, 0.72)
-const GRAPH_FONT := 8
-const GRAPH_SCALE := 0.9
-const GRAPH_ZOOM := 0.58
+const GRAPH_FONT := 16
+## Layout x/y were written for the smaller blocks. 1.5 leaves a gap without
+## the spread of 2×. Applied on every workspace.
+const GRAPH_SCALE := 1.5
+const GRAPH_ZOOM := 1.0
 const KIND_COLORS := {
 	"text_in": Color(0.22, 0.38, 0.52),
 	"text_out": Color(0.22, 0.38, 0.52),
@@ -401,8 +403,7 @@ func _show_launcher(workspaces: Array) -> void:
 			continue
 		var w: Dictionary = w_any
 		var id := str(w.get("id", ""))
-		var label := id
-		box.add_child(_btn("Run %s" % label, _open_workspace.bind(id)))
+		box.add_child(_btn("Run %s" % _workspace_menu_label(id), _open_workspace.bind(id)))
 	box.add_child(_btn("Discovery", _open_discovery))
 	box.add_child(_btn("Exit session", func() -> void:
 		_http_post("/v1/session/logout", {"principal_id": _actor()}, "logout")
@@ -411,6 +412,18 @@ func _show_launcher(workspaces: Array) -> void:
 	box.add_child(_btn("Refresh", _refresh))
 	if not _shown_pin.is_empty():
 		box.add_child(_note("Last generated PIN (paper, show once): %s" % _shown_pin))
+
+
+func _workspace_menu_label(id: String) -> String:
+	match id:
+		"w0":
+			return "w0 — first user"
+		"w1":
+			return "w1 — add user"
+		"w2":
+			return "w2 — write info"
+		_:
+			return id
 
 
 func _open_w0() -> void:
@@ -438,7 +451,7 @@ func _show_workspace(ws: Dictionary) -> void:
 		_show_w0_tabs(ws, layout)
 		return
 	var box := _vbox()
-	var title := "Workspace %s" % str(ws.get("id", _workspace_id))
+	var title := "Workspace %s" % _workspace_menu_label(str(ws.get("id", _workspace_id)))
 	if bool(ws.get("locked", false)) or bool(layout.get("locked", false)):
 		title += " — GraphEdit cannot widen authority"
 	if bool(ws.get("system", false)):
@@ -475,13 +488,13 @@ func _show_w0_tabs(_ws: Dictionary, layout: Dictionary) -> void:
 	overview.add_theme_constant_override("separation", 10)
 	overview.add_child(_heading("Empty Circle of Trust"))
 	overview.add_child(_note("This node is not linked to a Circle of Trust. It is a new box: no King, no G, no D1–D5."))
-	overview.add_child(_note("You can wait to connect later (sign this node's EK, join someone else's G — not this beat). Or start genesis: open W0 — Genesis, fill the fields, then Go / Commit."))
+	overview.add_child(_note("You can wait to connect later (sign this node's EK, join someone else's G — not this beat). Or start genesis: open W0 — first user, fill the fields, then Go / Commit."))
 	overview.add_child(_heading("Colour key"))
 	overview.add_child(_color_key())
 	overview.add_child(_note("Wires are locked (one grey). GraphEdit cannot mint or widen authority."))
 	var actions := HBoxContainer.new()
 	actions.add_theme_constant_override("separation", 8)
-	actions.add_child(_btn("Open W0 — Genesis", func() -> void: tabs.current_tab = 1))
+	actions.add_child(_btn("Open W0 — first user", func() -> void: tabs.current_tab = 1))
 	actions.add_child(_btn("Power off", func() -> void: _http_post("/v1/lab/power", {"on": false}, "power")))
 	actions.add_child(_btn("Zeroise", func() -> void: _http_post("/v1/lab/zeroise", {}, "zeroise")))
 	actions.add_child(_btn("Refresh", _refresh))
@@ -494,9 +507,32 @@ func _show_w0_tabs(_ws: Dictionary, layout: Dictionary) -> void:
 	genesis.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	genesis.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	tabs.add_child(genesis)
-	tabs.set_tab_title(1, "W0 - Genesis")
+	tabs.set_tab_title(1, "W0 — first user")
 	tabs.current_tab = 0
 	_build_graph(genesis, layout)
+
+
+func _wire_shader() -> Shader:
+	# GraphEdit draws every connection as (thickness + 4) pixels and paints
+	# the outer band in the rim colour. A small thickness is therefore still
+	# a wide stroke. This keeps a one-pixel core and fades the padding out.
+	var shader := Shader.new()
+	shader.code = """shader_type canvas_item;
+render_mode blend_mix;
+uniform vec4 rim_color : source_color;
+uniform int from_type;
+uniform int to_type;
+uniform float line_width;
+void fragment() {
+	float dist = abs(UV.y - 0.5);
+	float width = max(line_width, 1.0);
+	float core = 0.5 / width;
+	float aa = 0.6 / width;
+	float alpha = 1.0 - smoothstep(core, core + aa, dist);
+	COLOR = vec4(COLOR.rgb, COLOR.a * alpha);
+}
+"""
+	return shader
 
 
 func _color_key() -> VBoxContainer:
@@ -537,9 +573,9 @@ func _build_graph(parent: Control, layout: Dictionary) -> void:
 	graph.show_grid = true
 	graph.zoom = GRAPH_ZOOM
 	graph.snapping_distance = 24
-	graph.connection_lines_thickness = 1.5
-	graph.connection_lines_antialiased = true
-	graph.add_theme_color_override("connection_rim_color", WIRE_COLOR)
+	graph.connection_lines_thickness = 0.0
+	graph.connection_lines_antialiased = false
+	graph.set_meta("wire_shader", _wire_shader())
 	graph.add_theme_font_size_override("title_font_size", GRAPH_FONT)
 	graph.connection_request.connect(_on_graph_connection_request)
 	graph.disconnection_request.connect(_on_graph_disconnection_request)
@@ -616,7 +652,7 @@ func _build_graph(parent: Control, layout: Dictionary) -> void:
 				_add_subtitle(gn, n)
 				if nid == "pin":
 					_add_pin_prompt(gn)
-					gn.custom_minimum_size = Vector2(150, 64)
+					gn.custom_minimum_size = Vector2(150, 64) * (float(GRAPH_FONT) / 8.0)
 				var le := LineEdit.new()
 				le.placeholder_text = "5 digits" if nid == "pin" else gn.title
 				le.add_theme_font_size_override("font_size", GRAPH_FONT)
@@ -631,6 +667,23 @@ func _build_graph(parent: Control, layout: Dictionary) -> void:
 		if spec.is_empty():
 			continue
 		graph.connect_node(str(spec["from"]), int(spec["from_port"]), str(spec["to"]), int(spec["to_port"]))
+	_thin_graph_wires(graph)
+
+
+func _thin_graph_wires(graph: GraphEdit) -> void:
+	var layer := graph.get_node_or_null("_connection_layer")
+	if layer == null:
+		return
+	var shader: Shader = graph.get_meta("wire_shader")
+	for child in layer.get_children():
+		if not child is Line2D:
+			continue
+		var line := child as Line2D
+		var mat := ShaderMaterial.new()
+		mat.shader = shader
+		line.material = mat
+		line.width = 1.0
+		line.antialiased = false
 
 
 func _add_subtitle(gn: GraphNode, n: Dictionary) -> void:
@@ -759,20 +812,21 @@ func _wire_spec(w_any: Variant) -> Dictionary:
 
 
 func _node_min_size(typ: String, n: Dictionary = {}) -> Vector2:
+	var s := float(GRAPH_FONT) / 8.0
 	match typ:
 		"process":
-			return Vector2(140, 32)
+			return Vector2(140, 32) * s
 		"data", "info":
-			return Vector2(140, 36)
+			return Vector2(140, 36) * s
 		"populate":
-			return Vector2(140, 40)
+			return Vector2(140, 40) * s
 		"commit":
 			var ports: Array = n.get("ports", [])
-			return Vector2(190, 44 + float(ports.size()) * 18.0)
+			return Vector2(190, 44 + float(ports.size()) * 18.0) * s
 		"note":
-			return Vector2(160, 48)
+			return Vector2(160, 48) * s
 		_:
-			return Vector2(150, 48)
+			return Vector2(150, 48) * s
 
 
 func _style_graph_node(gn: GraphNode, typ: String, override_col: Color = Color(0, 0, 0, 0)) -> void:
@@ -834,7 +888,7 @@ func _paper_status_label() -> Label:
 	var l := Label.new()
 	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	if _workspace_id == "w1":
-		l.text = "W1 admits a new user before their first login. Switch to Alice, pick up her public-key slip, G-give it to Helen, switch back, then Populate. Populate never copies the seater's own keys."
+		l.text = "W1 adds a user before their first login. Switch to the new persona, pick up their public-key slip, G-give it to the seated user, switch back, then Populate. Populate never copies the seater's own keys."
 	elif _workspace_id == "w0":
 		l.text = "Fields stay empty until you press Populate (persona or inventory keys). PIN is typed."
 	else:
@@ -852,7 +906,7 @@ func _apply_inventory_to_graph(force: bool = false) -> void:
 	var creds := _populate_source()
 	if creds.is_empty():
 		if _workspace_id == "w1":
-			_show_status("W1 needs a new user's public key (not Helen's). Generate Alice, G-give her public-key slip to the seater, then Populate.")
+			_show_status("W1 needs the new user's public key (not the seater's). Generate them, G-give their public-key slip to the seater, then Populate.")
 		else:
 			_show_status("Nothing to populate — generate a persona or pick up paper.")
 		return

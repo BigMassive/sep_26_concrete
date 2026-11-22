@@ -4,6 +4,8 @@ Thin **physical-world UI** for `sep_26_concrete` ([ADR 0001](../docs/decisions/0
 
 **Main scene:** `scenes/world.tscn` — one 3D room, desk, laptop (`node-1`), **identity desk** (sign: Collect identities here), listen-server session. Nested console `scenes/main.tscn` is the node-1 screen (also `--console-only`). Each generated **persona is a separate coloured dummy** (capsule torso, sphere head, hinged cylinder limbs) in the room; first-person hides that body's head. Switching control does not retarget the OTP console (that stays with whoever is seated). HUD says **at node-1** only for the seated body.
 
+The seated console is drawn into its own texture, then shown in the laptop panel. That texture is the panel size multiplied by the display scale (screen scale, window content scale, or the window's pixel size divided by the 1280×720 project size — whichever is larger). The controls are laid out at the panel size and rasterised into the larger texture, so letters stay sharp instead of being a small picture enlarged to fit. GraphEdit uses a font size of 16 and zoom `1`. Its built-in wire is at least four pixels wide and paints that padding in the rim colour, so the connection shader keeps a one-pixel core and fades the rest. Every workspace places its stored block positions at `1.5×`, a gap between the original layout and the earlier `2×` spread. Keystrokes are forwarded into the console texture, so fields such as the W0 PIN still accept typing after the window is resized or taken fullscreen. A fractional desktop scale cannot land on a whole pixel; the texture still matches the window's framebuffer.
+
 Helen → Alice CoT: [docs/11](../docs/11-helen-alice-cot-beats.md), coded per [docs/12](../docs/12-helen-alice-build.md). Sessions are **not** signed HTTP (ADR 0008 stage 5 later); OTP still trusts `principal_id`.
 
 ## Prerequisites
@@ -13,7 +15,21 @@ Helen → Alice CoT: [docs/11](../docs/11-helen-alice-cot-beats.md), coded per [
 ./scripts/node-up.sh     # OTP :4000 — empty CoT, no auto-King
 ```
 
-Requires **Godot 4.5** on the host (`GODOT_BIN` overrides path). Use a **blank** `lab/data/node/` (or zeroise) for the first play.
+Requires **Godot 4.7** on the host (`GODOT_BIN` overrides path). This machine uses `/home/stuart/Downloads/godot` (4.7.2). Use a **blank** `lab/data/node/` (or zeroise) for the first play.
+
+## Godot AI (editor connection)
+
+[Godot AI](https://github.com/hi-godot/godot-ai) 4.4.2 is installed at `addons/godot_ai` and enabled in `project.godot`. It is free (MIT). It lets a Cursor agent work in the **open Godot editor**: read the scene, edit it with undo, run the game, send keys and clicks, read the error log, and screenshot the running game. That is how console, HUD, and fullscreen changes get checked without guessing from a log file.
+
+Use it when the Godot **editor** is open on this project. A game started only by `./scripts/godot-up.sh` is not connected, and a screenshot of the running game only works when the plugin started that play session.
+
+Another checkout gets the plugin, the project rule `.cursor/rules/godot-ai.mdc`, and the shared client entry `.cursor/mcp.json`. That entry runs `uvx` with `godot-ai==4.4.2`, `attach` on ports 8000 and 9500, and `--disable-telemetry`. Telemetry is otherwise on.
+
+On a machine that will drive it:
+
+1. Install [uv](https://docs.astral.sh/uv/) so `uvx` is on the path Cursor uses. If Cursor cannot see it, point the `command` in `.cursor/mcp.json` at that `uvx`.
+2. Reload Cursor once so it reads the project entry. A new chat then sees the tools.
+3. Leave the Godot editor open.
 
 ## Session (listen-server from the start)
 

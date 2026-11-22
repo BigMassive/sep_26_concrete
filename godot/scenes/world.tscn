@@ -78,7 +78,15 @@ grow_vertical = 2
 color = Color(0.05, 0.06, 0.08, 0.55)
 mouse_filter = 2
 
-[node name="SubViewportContainer" type="SubViewportContainer" parent="HUD/Root/SeatedLayer"]
+[node name="ConsoleViewport" type="SubViewport" parent="HUD/Root/SeatedLayer"]
+unique_name_in_owner = true
+handle_input_locally = false
+size = Vector2i(1100, 700)
+size_2d_override_stretch = true
+render_target_update_mode = 4
+
+[node name="ConsoleDisplay" type="TextureRect" parent="HUD/Root/SeatedLayer"]
+unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -89,13 +97,9 @@ offset_right = -168.0
 offset_bottom = -48.0
 grow_horizontal = 2
 grow_vertical = 2
-stretch = true
-
-[node name="ConsoleViewport" type="SubViewport" parent="HUD/Root/SeatedLayer/SubViewportContainer"]
-unique_name_in_owner = true
-handle_input_locally = true
-size = Vector2i(1100, 700)
-render_target_update_mode = 4
+mouse_filter = 0
+expand_mode = 1
+stretch_mode = 0
 
 [node name="SeatedHint" type="Label" parent="HUD/Root/SeatedLayer"]
 unique_name_in_owner = true
@@ -156,4 +160,18 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 0
+
+[node name="FullscreenButton" type="Button" parent="HUD/Root"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -188.0
+offset_top = 12.0
+offset_right = -12.0
+offset_bottom = 44.0
+grow_horizontal = 0
+theme_override_font_sizes/font_size = 16
+text = "Enter full screen"
 

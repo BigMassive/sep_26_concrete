@@ -240,7 +240,7 @@ defmodule ConcreteRuntime.Workspaces do
           "id" => "prompt",
           "title" => "What to do",
           "subtitle" =>
-            "W1 admits Alice before her first login. Generate her, G-give the public-key slip to Helen, then Populate. Never copies Helen's keys. PIN is generated — tell Alice once.",
+            "Add a user before their first login. Generate them, G-give the public-key slip to the seated user, then Populate. Never copies the seater's keys. PIN is generated — tell the new user once.",
           "x" => 20,
           "y" => 460,
           "type" => "note"
@@ -301,7 +301,7 @@ defmodule ConcreteRuntime.Workspaces do
         %{
           "id" => "d5",
           "title" => "D5[user]",
-          "subtitle" => "will write — Alice discovery root",
+          "subtitle" => "will write — new user's discovery root",
           "x" => 980,
           "y" => 620,
           "type" => "data"
