@@ -20,7 +20,7 @@ Implement the **Helen → Alice** play in [11](11-helen-alice-cot-beats.md) as f
 
 - **No auto-King** on node-up. Genesis **W0** is the one-shot mint; further writes cap-checked as Helen. Replay genesis **fails** unless **zeroise**.
 - **EK → D2** at genesis (this node admits itself). Do not auto-write some other CoT’s D2.
-- **Capability records** in OTP (holder, verb/resource, α/β/ω stub, workspace CID). GraphEdit **cannot** widen authority. Locked graphs denied **server-side**.
+- **Capability records** in OTP (holder, verb/resource, α/β/ω stub, workspace CID). **Run** and mutates are **cap-checked**. Helen’s King **any** cap (bootstrap/do-anything) covers W1; Alice is denied W1 for lack of a covering cap. GraphEdit **cannot** widen authority (save-layout cannot mint verbs).
 - **Workspaces** as **data** (full 2D layout JSON/CID) + **title info** Wendy-linked. Godot GraphEdit **rebuilds** from that payload.
 - **W0, W1, W2** as specified in 11. W1 creates D5[Alice] and links root to G; PIN generated; Alice pubkey not privkey. W2: text, D3 picker, Wendy-link, auto-link author D5; store-on = this node.
 - **Wendy-links** between **any** info or data DIDs; data mutate = **same DID, new CID**.
@@ -29,7 +29,7 @@ Implement the **Helen → Alice** play in [11](11-helen-alice-cot-beats.md) as f
 - **Esc** = unsit, session remains. **Exit session** = logout. **Power off** ⇒ OTP **refuses** (and/or subtree stops).
 - **Identity process:** username+PIN; stub αβω that **pass** Alice’s caps. Document: **not** signed sessions.
 - **Discovery:** force-directed graph from OTP walk starting **D5[user]**; info filtered by read list; Godot does not scrape IPFS.
-- **3D tray:** set dressing only; do not keep paper-pickup-as-King.
+- **3D tray / identity desk:** set dressing for paper; sign **Collect identities here**. Pickup does not onboard King. Each persona is a **separate coloured dummy** (capsule/sphere/cylinder, KidsCanCode-style; first-person hides the head). **G** prefers the giver’s **public-key slip**. Console is only the **seated** body. HUD **at node-1** follows the seater. W1 **Populate** copies the admittee (Alice / new user), never the seater.
 - Gate **`POST /v1/principals`** (and equivalent) so only W1/bootstrap can add users.
 
 ## Explicitly do not
@@ -47,12 +47,12 @@ Implement the **Helen → Alice** play in [11](11-helen-alice-cot-beats.md) as f
 
 - `mix test` green.
 - Manual: empty data dir; W0 once; second W0 fails; Helen W1 Alice; Exit; Alice login; discovery; W2 link visible.
-- Unkeyed / wrong PIN / locked graph / unread info omitted.
+- Unkeyed / wrong PIN / no covering cap / unread info omitted.
 - If Godot missing, say so; do not fake a pass.
 - Headless playbook: optional if W0–W2 are console-drivable; still option C, not curl mutate as the user.
 
 ## Art / UX bar
 
-CSG room already exists. GraphEdit can be ugly. Force graph can be ugly. Prefer **obvious Elixir** over clever.
+CSG room already exists. Avatars are a tutorial-style capsule dummy (not box limbs). GraphEdit can be ugly. Force graph can be ugly. Prefer **obvious Elixir** over clever.
 
 When in doubt: **OTP is authority**; Godot draws workspaces and the room.

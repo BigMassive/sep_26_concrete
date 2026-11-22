@@ -19,14 +19,14 @@ Single place for terms used in this prototype. Prefer these spellings in docs an
 | **DID** | Decentralised identifier; naming from the start, including for a CoT’s IOTA when needed. |
 | **K_DAG** | Symmetric key material for an encrypted IPFS DAG of a named object; derived per name from CoT master via HKDF in the programme map. |
 | **EK** | Endorsement key — fundamental hardware identity held in the PQC TPM story. |
-| **Capability** | Authority (as data/information) granted boss → user to perform a specific action or access a resource. May include a 4D meaning reference and identity thresholds; holder may self-restrict. Nothing on the critical path without one (once the slice implements it). |
-| **Bootstrap capability** | Auto-minted to the **first user on the first node** of a fresh instance; authorises **anything anywhere** (admin/root). Live check on mutates; not a Godot flag or supervisor bypass ([ADR 0005](decisions/0005-bootstrap-capability.md)). |
+| **Capability** | Authority (as data/information) granted boss → user to perform a specific action or access a resource. May include a 4D meaning reference and identity thresholds; holder may self-restrict. **Access is cap-checked** — a GraphEdit lock flag is not the access control. Nothing on the critical path without a covering cap (once the slice implements it). |
+| **any / Bootstrap capability** | Auto-minted to the **first user on the first node** of a fresh instance; authorises **anything anywhere** (admin/root). Storyboard name **any**; ADR 0005 name bootstrap/do-anything. Live check on mutates; not a Godot flag or supervisor bypass ([ADR 0005](decisions/0005-bootstrap-capability.md)). Helen (King) holds it in [11](11-helen-alice-cot-beats.md) — that covers **W1**. |
 | **Funding / voucher** | Time-limited economic authority (King-issued within a CoT) required alongside capability for many mutations/maintenance. |
 | **Boss** | Role that mints or delegates capabilities (site term). Exact hierarchy (guards, …) is out of scope until modelled. |
-| **King** | Bootstrap **role** (do-anything cap). First holder has a **human name** (storyboard: **Helen**) ([ADR 0005](decisions/0005-bootstrap-capability.md), [11](11-helen-alice-cot-beats.md)). |
+| **King** | Bootstrap **role** (**any** / do-anything cap). First holder has a **human name** (storyboard: **Helen**) ([ADR 0005](decisions/0005-bootstrap-capability.md), [11](11-helen-alice-cot-beats.md)). |
 | **G** | CoT first-among-equals **information** DID; Wendy-links to D1–D5 ([11](11-helen-alice-cot-beats.md)). |
 | **D1–D5** | CoT data lists: user PKs; node EKs; username pairs; PIN pairs (tight read); pubkey→personal discovery root ([11](11-helen-alice-cot-beats.md)). |
-| **Workspace** | GraphEdit **data** (full layout) plus a **title** info object. Caps **point at** workspaces; the picture is not the authority record ([11](11-helen-alice-cot-beats.md)). |
+| **Workspace** | GraphEdit **data** (full layout) plus a **title** info object. Caps **point at** workspaces; the picture is not the authority record. Running a workspace is **cap-gated**; GraphEdit cannot mint or widen verbs ([11](11-helen-alice-cot-beats.md)). |
 | **Principal** | The **person** acting on a node. **Truth:** index-0 **ML-DSA-87 public key** ([ADR 0008](decisions/0008-user-crypto-identity.md)), encoded `mldsa87:…`. Username is an alias. |
 | **Master seed** | FIPS 202 secret issued **once**, **outside** the system; product custody = seL4 vault (volatile). HKDF(index) derives ML-DSA-87 keypairs; **index 0** = main identity. |
 | **Shared task object** | Ledger object: escrow for a task (incl. crowdfunding) plus refs to participant node journals. |

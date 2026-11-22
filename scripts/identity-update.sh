@@ -44,7 +44,7 @@ ERR=$(mktemp)
 cleanup() { rm -f "${RESP}" "${ERR}"; }
 trap cleanup EXIT
 
-docker run --rm --network host --entrypoint iota \
+timeout --signal=TERM 50 docker run --rm --network host --entrypoint iota \
   -e IOTA_CONFIG_DIR=/data/iota-config \
   -v "${IOTA_DATA}:/data/iota-config" \
   "${IOTA_IMG}" \

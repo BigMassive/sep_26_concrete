@@ -6,11 +6,16 @@ extends Control
 
 const BASE := "http://127.0.0.1:4000"
 const WIRE_COLOR := Color(0.62, 0.66, 0.72)
+const GRAPH_FONT := 8
+const GRAPH_SCALE := 0.9
+const GRAPH_ZOOM := 0.58
 const KIND_COLORS := {
 	"text_in": Color(0.22, 0.38, 0.52),
 	"text_out": Color(0.22, 0.38, 0.52),
 	"user_picker": Color(0.22, 0.38, 0.52),
 	"run": Color(0.58, 0.28, 0.46),
+	"commit": Color(0.22, 0.52, 0.36),
+	"populate": Color(0.2, 0.42, 0.48),
 	"data": Color(0.62, 0.46, 0.18),
 	"info": Color(0.18, 0.5, 0.4),
 	"process": Color(0.36, 0.3, 0.56),
@@ -42,6 +47,13 @@ var _usernames: Array = []
 var _shown_pin: String = ""
 var _screen: String = ""
 var _discovery: DiscoveryView = null
+var _graph_nodes: Dictionary = {}
+var _graph_kinds: Dictionary = {}
+var _commit_btn: Button = null
+var _populate_btn: Button = null
+var _busy: bool = false
+var _busy_timer: Timer = null
+var _busy_pulse: bool = false
 
 
 func _ready() -> void:
@@ -101,7 +113,11 @@ func _on_http_completed(_result: int, code: int, _headers: PackedStringArray, bo
 	last_code = code
 
 	if code == 0:
-		status_label.text = "OTP unreachable at %s — run ./scripts/node-up.sh." % BASE
+		if _busy:
+			_end_busy(false)
+			_show_status("Write dropped before OTP answered (chain publish timed out). OTP is still up — press Go / Commit again.")
+			return
+		_show_status("OTP unreachable at %s — run ./scripts/node-up.sh." % BASE)
 		_show_unreachable()
 		return
 
@@ -120,8 +136,9 @@ func _on_http_completed(_result: int, code: int, _headers: PackedStringArray, bo
 				_show_off()
 				return
 			if not bool(_lab.get("genesis_complete", false)):
-				status_label.text = "Empty CoT — chooser."
-				_show_chooser()
+				_hide_status()
+				_workspace_id = "w0"
+				_http_get("/v1/workspace?id=w0&principal_id=unkeyed", "workspace")
 				return
 			_http_get("/v1/session", "session")
 		"session":
@@ -146,12 +163,16 @@ func _on_http_completed(_result: int, code: int, _headers: PackedStringArray, bo
 				_show_workspace(parsed)
 		"genesis":
 			if code == 409:
-				status_label.text = "Genesis replay denied — zeroise first."
+				_end_busy(false)
+				_show_status("Genesis replay denied — zeroise first.")
 				return
 			if code >= 400:
-				status_label.text = "Genesis failed (%s): %s" % [code, text]
+				_end_busy(false)
+				_show_status("Genesis failed (%s): %s" % [code, text])
 				return
-			status_label.text = "Genesis ok — Helen is King. Not signed HTTP."
+			_end_busy(true)
+			_hide_status()
+			status_label.text = "Genesis ok — King minted. Not signed HTTP."
 			if typeof(parsed) == TYPE_DICTIONARY:
 				session_principal_id = str(parsed.get("principal", {}).get("id", ""))
 				session_username = str(parsed.get("principal", {}).get("display_name", "Helen"))
@@ -192,11 +213,14 @@ func _on_http_completed(_result: int, code: int, _headers: PackedStringArray, bo
 			_refresh()
 		"run_w1":
 			if code == 403:
-				status_label.text = "W1 denied (cap or locked graph)."
+				_end_busy(false)
+				status_label.text = "W1 denied — no covering capability (Helen's any cap covers this)."
 				return
 			if code >= 400:
+				_end_busy(false)
 				status_label.text = "W1 failed (%s): %s" % [code, text]
 				return
+			_end_busy(true)
 			if typeof(parsed) == TYPE_DICTIONARY:
 				_shown_pin = str(parsed.get("pin", ""))
 				status_label.text = "Alice admitted. PIN (show once): %s" % _shown_pin
@@ -205,11 +229,14 @@ func _on_http_completed(_result: int, code: int, _headers: PackedStringArray, bo
 				status_label.text = "W1 ok."
 		"run_w2":
 			if code == 403:
-				status_label.text = "W2 denied (no cap, vault, or locked graph)."
+				_end_busy(false)
+				status_label.text = "W2 denied — no covering cap, or vault unusable."
 				return
 			if code >= 400:
+				_end_busy(false)
 				status_label.text = "W2 failed (%s): %s" % [code, text]
 				return
+			_end_busy(true)
 			status_label.text = "Wrote information."
 			if typeof(parsed) == TYPE_DICTIONARY:
 				current_did = str(parsed.get("did", ""))
@@ -223,7 +250,7 @@ func _on_http_completed(_result: int, code: int, _headers: PackedStringArray, bo
 			status_label.text = "Discovery (data = markers; unread info omitted)."
 		"save_graph":
 			if code == 403:
-				status_label.text = "Graph locked — GraphEdit cannot widen authority."
+				status_label.text = "Denied — GraphEdit cannot widen authority."
 			else:
 				status_label.text = "Save layout: %s %s" % [code, text]
 
@@ -241,6 +268,19 @@ func _apply_session(parsed: Dictionary) -> void:
 	_emit_session()
 
 
+func _show_status(text: String) -> void:
+	status_label.text = text
+	status_label.visible = true
+
+
+func _hide_status() -> void:
+	status_label.visible = false
+
+
+func _on_populate_graph() -> void:
+	_apply_inventory_to_graph(true)
+
+
 func _emit_session() -> void:
 	if session_username.is_empty():
 		session_label.text = "Session: none (Esc unsits; Exit logs out)"
@@ -254,8 +294,14 @@ func _clear_screen() -> void:
 		screen_host.remove_child(c)
 		c.queue_free()
 	_graph_inputs.clear()
+	_graph_nodes.clear()
+	_graph_kinds.clear()
+	_commit_btn = null
+	_populate_btn = null
 	_discovery = null
 	_screen = ""
+	_stop_busy_timer()
+	_busy = false
 
 
 func _vbox() -> VBoxContainer:
@@ -298,15 +344,8 @@ func _show_off() -> void:
 
 
 func _show_chooser() -> void:
-	_clear_screen()
-	_screen = "chooser"
-	var box := _vbox()
-	box.add_child(_heading("Boot chooser"))
-	box.add_child(_note("This box has no CoT yet. Network join (sign EK, D2, resolve G) is later."))
-	box.add_child(_btn("King-making (W0 genesis)", _open_w0))
-	box.add_child(_btn("Power off", func() -> void: _http_post("/v1/lab/power", {"on": false}, "power")))
-	box.add_child(_btn("Zeroise (re-open King-making; chain wipe stubbed)", func() -> void: _http_post("/v1/lab/zeroise", {}, "zeroise")))
-	box.add_child(_btn("Refresh", _refresh))
+	_workspace_id = "w0"
+	_http_get("/v1/workspace?id=w0&principal_id=unkeyed", "workspace")
 
 
 func _show_login() -> void:
@@ -323,10 +362,11 @@ func _show_login() -> void:
 	if not creds.is_empty():
 		user.text = str(creds.get("holder_name", ""))
 	box.add_child(user)
+	box.add_child(_pin_prompt_label())
 	var pin := LineEdit.new()
-	pin.placeholder_text = "PIN"
-	pin.secret = true
 	pin.name = "LoginPin"
+	pin.secret = true
+	_wire_pin_edit(pin)
 	box.add_child(pin)
 	var sk := LineEdit.new()
 	sk.placeholder_text = "Paper private key"
@@ -336,6 +376,9 @@ func _show_login() -> void:
 		sk.text = str(creds.get("private_key", ""))
 	box.add_child(sk)
 	box.add_child(_btn("Login", func() -> void:
+		if not _pin_ok(pin.text):
+			_show_status("PIN must be exactly 5 digits (0–9).")
+			return
 		_http_post("/v1/session/login", {
 			"username": user.text,
 			"pin": pin.text,
@@ -351,7 +394,6 @@ func _show_launcher(workspaces: Array) -> void:
 	_screen = "launcher"
 	var box := _vbox()
 	box.add_child(_heading("Home / launcher"))
-	box.add_child(_note("Runnable workspaces are OTP caps, not GraphEdit pictures."))
 	if workspaces.is_empty():
 		box.add_child(_note("No workspaces listed for this principal."))
 	for w_any in workspaces:
@@ -359,8 +401,7 @@ func _show_launcher(workspaces: Array) -> void:
 			continue
 		var w: Dictionary = w_any
 		var id := str(w.get("id", ""))
-		var locked := bool(w.get("locked", false))
-		var label := "%s%s" % [id, " (locked)" if locked else ""]
+		var label := id
 		box.add_child(_btn("Run %s" % label, _open_workspace.bind(id)))
 	box.add_child(_btn("Discovery", _open_discovery))
 	box.add_child(_btn("Exit session", func() -> void:
@@ -393,18 +434,20 @@ func _show_workspace(ws: Dictionary) -> void:
 	if layout.is_empty() and _workspace_id == "w0":
 		layout = {"workspace_id": "w0", "nodes": [], "wires": []}
 	_usernames = ws.get("usernames", [])
+	if _workspace_id == "w0" and not bool(_lab.get("genesis_complete", false)):
+		_show_w0_tabs(ws, layout)
+		return
 	var box := _vbox()
 	var title := "Workspace %s" % str(ws.get("id", _workspace_id))
 	if bool(ws.get("locked", false)) or bool(layout.get("locked", false)):
-		title += " — locked (server denies GraphEdit widen)"
+		title += " — GraphEdit cannot widen authority"
 	if bool(ws.get("system", false)):
 		title += " — system (no prior cap)"
 	box.add_child(_heading(title))
 	box.add_child(_paper_status_label())
-	box.add_child(_note("blue = input · pink = function · amber = data · green = info · purple = process. Wires are locked (same colour)."))
 	var row := HBoxContainer.new()
 	row.add_child(_btn("Back", _refresh))
-	row.add_child(_btn("Try save layout (expect deny if locked)", func() -> void:
+	row.add_child(_btn("Try save layout (expect deny — cannot mint verbs)", func() -> void:
 		_http_post("/v1/workspaces/save", {
 			"principal_id": _actor(),
 			"id": _workspace_id,
@@ -413,10 +456,74 @@ func _show_workspace(ws: Dictionary) -> void:
 	))
 	box.add_child(row)
 	_build_graph(box, layout)
-	_apply_inventory_to_graph()
 	var g_did := str(ws.get("g_did", ""))
 	if _graph_inputs.has("link") and _graph_inputs["link"] is LineEdit and not g_did.is_empty():
 		(_graph_inputs["link"] as LineEdit).text = g_did
+
+
+func _show_w0_tabs(_ws: Dictionary, layout: Dictionary) -> void:
+	_screen = "w0_tabs"
+	var tabs := TabContainer.new()
+	tabs.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	tabs.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	screen_host.add_child(tabs)
+
+	var overview := VBoxContainer.new()
+	overview.name = "Overview"
+	overview.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	overview.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	overview.add_theme_constant_override("separation", 10)
+	overview.add_child(_heading("Empty Circle of Trust"))
+	overview.add_child(_note("This node is not linked to a Circle of Trust. It is a new box: no King, no G, no D1–D5."))
+	overview.add_child(_note("You can wait to connect later (sign this node's EK, join someone else's G — not this beat). Or start genesis: open W0 — Genesis, fill the fields, then Go / Commit."))
+	overview.add_child(_heading("Colour key"))
+	overview.add_child(_color_key())
+	overview.add_child(_note("Wires are locked (one grey). GraphEdit cannot mint or widen authority."))
+	var actions := HBoxContainer.new()
+	actions.add_theme_constant_override("separation", 8)
+	actions.add_child(_btn("Open W0 — Genesis", func() -> void: tabs.current_tab = 1))
+	actions.add_child(_btn("Power off", func() -> void: _http_post("/v1/lab/power", {"on": false}, "power")))
+	actions.add_child(_btn("Zeroise", func() -> void: _http_post("/v1/lab/zeroise", {}, "zeroise")))
+	actions.add_child(_btn("Refresh", _refresh))
+	overview.add_child(actions)
+	tabs.add_child(overview)
+	tabs.set_tab_title(0, "Overview")
+
+	var genesis := VBoxContainer.new()
+	genesis.name = "W0Genesis"
+	genesis.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	genesis.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	tabs.add_child(genesis)
+	tabs.set_tab_title(1, "W0 - Genesis")
+	tabs.current_tab = 0
+	_build_graph(genesis, layout)
+
+
+func _color_key() -> VBoxContainer:
+	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation", 6)
+	var rows := [
+		["Input", KIND_COLORS["text_in"]],
+		["Populate", KIND_COLORS["populate"]],
+		["Go / Commit", KIND_COLORS["commit"]],
+		["Data", KIND_COLORS["data"]],
+		["Info", KIND_COLORS["info"]],
+		["Process", KIND_COLORS["process"]],
+		["Locked wire", WIRE_COLOR],
+	]
+	for row_any in rows:
+		var row: Array = row_any
+		var line := HBoxContainer.new()
+		line.add_theme_constant_override("separation", 10)
+		var swatch := ColorRect.new()
+		swatch.custom_minimum_size = Vector2(22, 16)
+		swatch.color = row[1]
+		line.add_child(swatch)
+		var lab := Label.new()
+		lab.text = str(row[0])
+		line.add_child(lab)
+		box.add_child(line)
+	return box
 
 
 func _build_graph(parent: Control, layout: Dictionary) -> void:
@@ -424,16 +531,25 @@ func _build_graph(parent: Control, layout: Dictionary) -> void:
 	graph.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	graph.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	graph.size_flags_stretch_ratio = 1.0
-	graph.custom_minimum_size = Vector2(0, 280)
+	graph.custom_minimum_size = Vector2(0, 0)
 	graph.right_disconnects = false
 	graph.minimap_enabled = true
 	graph.show_grid = true
+	graph.zoom = GRAPH_ZOOM
+	graph.snapping_distance = 24
+	graph.connection_lines_thickness = 1.5
+	graph.connection_lines_antialiased = true
 	graph.add_theme_color_override("connection_rim_color", WIRE_COLOR)
+	graph.add_theme_font_size_override("title_font_size", GRAPH_FONT)
 	graph.connection_request.connect(_on_graph_connection_request)
 	graph.disconnection_request.connect(_on_graph_disconnection_request)
 	graph.delete_nodes_request.connect(_on_graph_delete_nodes)
 	parent.add_child(graph)
 	_graph_inputs.clear()
+	_graph_nodes.clear()
+	_graph_kinds.clear()
+	_commit_btn = null
+	_populate_btn = null
 	var nodes: Array = layout.get("nodes", [])
 	for n_any in nodes:
 		if typeof(n_any) != TYPE_DICTIONARY:
@@ -443,62 +559,233 @@ func _build_graph(parent: Control, layout: Dictionary) -> void:
 		var nid := str(n.get("id", "n"))
 		gn.name = nid
 		gn.title = str(n.get("title", nid))
-		gn.position_offset = Vector2(float(n.get("x", 40)), float(n.get("y", 40)))
-		gn.custom_minimum_size = Vector2(210, 72)
+		gn.position_offset = Vector2(float(n.get("x", 40)), float(n.get("y", 40))) * GRAPH_SCALE
+		gn.add_theme_font_size_override("title_font_size", GRAPH_FONT)
 		var typ := str(n.get("type", "text_in"))
+		gn.custom_minimum_size = _node_min_size(typ, n)
 		_style_graph_node(gn, typ)
-		var subtitle := str(n.get("subtitle", ""))
-		if not subtitle.is_empty():
-			var sub := Label.new()
-			sub.text = subtitle
-			sub.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-			sub.add_theme_font_size_override("font_size", 11)
-			sub.add_theme_color_override("font_color", Color(0.88, 0.9, 0.93))
-			gn.add_child(sub)
+		_graph_nodes[nid] = gn
+		_graph_kinds[nid] = typ
 		match typ:
 			"text_out":
+				_add_subtitle(gn, n)
 				var out := LineEdit.new()
 				out.editable = false
 				out.placeholder_text = "(output)"
+				out.add_theme_font_size_override("font_size", GRAPH_FONT)
 				gn.add_child(out)
 				_graph_inputs[nid] = out
+				_set_io_slot(gn, 0, true, true)
 			"user_picker":
+				_add_subtitle(gn, n)
 				var item := ItemList.new()
 				item.select_mode = ItemList.SELECT_MULTI
-				item.custom_minimum_size = Vector2(200, 88)
+				item.custom_minimum_size = Vector2(110, 48)
+				item.add_theme_font_size_override("font_size", GRAPH_FONT)
 				for u_any in _usernames:
 					if typeof(u_any) == TYPE_DICTIONARY:
 						item.add_item(str(u_any.get("username", "")))
 				gn.add_child(item)
 				_graph_inputs[nid] = item
+				_set_io_slot(gn, 0, true, true)
+			"populate":
+				_add_subtitle(gn, n)
+				var pb := Button.new()
+				pb.text = "Populate"
+				pb.add_theme_font_size_override("font_size", GRAPH_FONT)
+				pb.pressed.connect(_on_populate_graph)
+				gn.add_child(pb)
+				_populate_btn = pb
+				_set_io_slot(gn, 0, false, true)
+			"commit":
+				_fill_commit_node(gn, n)
 			"run":
-				var b := Button.new()
-				b.text = gn.title
-				b.pressed.connect(_on_run_graph)
-				gn.add_child(b)
+				_add_subtitle(gn, n)
+				var rb := Button.new()
+				rb.text = gn.title
+				rb.add_theme_font_size_override("font_size", GRAPH_FONT)
+				rb.pressed.connect(_on_run_graph)
+				gn.add_child(rb)
+				_commit_btn = rb
+				_set_io_slot(gn, 0, true, true)
 			"data", "info", "process", "note":
-				pass
+				_add_subtitle(gn, n)
+				var wired := nid != "prompt"
+				_set_io_slot(gn, 0, wired, wired)
 			_:
+				_add_subtitle(gn, n)
+				if nid == "pin":
+					_add_pin_prompt(gn)
+					gn.custom_minimum_size = Vector2(150, 64)
 				var le := LineEdit.new()
-				le.placeholder_text = gn.title
+				le.placeholder_text = "5 digits" if nid == "pin" else gn.title
+				le.add_theme_font_size_override("font_size", GRAPH_FONT)
+				if nid == "pin":
+					_wire_pin_edit(le)
 				gn.add_child(le)
 				_graph_inputs[nid] = le
-		gn.set_slot(0, true, 0, WIRE_COLOR, true, 0, WIRE_COLOR)
+				_set_io_slot(gn, 0, true, true)
 		graph.add_child(gn)
 	for w_any in layout.get("wires", []):
-		if typeof(w_any) == TYPE_ARRAY and w_any.size() >= 2:
-			graph.connect_node(str(w_any[0]), 0, str(w_any[1]), 0)
+		var spec := _wire_spec(w_any)
+		if spec.is_empty():
+			continue
+		graph.connect_node(str(spec["from"]), int(spec["from_port"]), str(spec["to"]), int(spec["to_port"]))
 
 
-func _style_graph_node(gn: GraphNode, typ: String) -> void:
+func _add_subtitle(gn: GraphNode, n: Dictionary) -> void:
+	var subtitle := str(n.get("subtitle", ""))
+	if subtitle.is_empty():
+		return
+	var sub := Label.new()
+	sub.text = subtitle
+	var typ := str(n.get("type", ""))
+	if typ == "note":
+		sub.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		sub.custom_minimum_size = Vector2(120, 0)
+	else:
+		sub.autowrap_mode = TextServer.AUTOWRAP_OFF
+	sub.add_theme_font_size_override("font_size", GRAPH_FONT)
+	sub.add_theme_color_override("font_color", Color(0.88, 0.9, 0.93))
+	gn.add_child(sub)
+	gn.set_meta("base_subtitle", subtitle)
+
+
+func _add_pin_prompt(host: Control) -> void:
+	host.add_child(_pin_prompt_label())
+
+
+func _pin_prompt_label() -> Label:
+	var hint := Label.new()
+	hint.text = "Enter a 5-digit numeric PIN"
+	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	hint.add_theme_font_size_override("font_size", GRAPH_FONT)
+	hint.add_theme_color_override("font_color", Color(0.9, 0.86, 0.7))
+	return hint
+
+
+func _wire_pin_edit(le: LineEdit) -> void:
+	le.max_length = 5
+	le.placeholder_text = "5-digit PIN"
+	le.virtual_keyboard_type = LineEdit.KEYBOARD_TYPE_NUMBER
+	le.text_changed.connect(func(t: String) -> void: _filter_pin_edit(le, t))
+	_paint_pin_edit(le)
+
+
+func _filter_pin_edit(le: LineEdit, t: String) -> void:
+	var out := ""
+	for i in t.length():
+		var ch := t.substr(i, 1)
+		if ch >= "0" and ch <= "9":
+			out += ch
+		if out.length() >= 5:
+			break
+	if out != t:
+		var col := le.caret_column
+		le.text = out
+		le.caret_column = mini(col, out.length())
+	_paint_pin_edit(le)
+
+
+func _paint_pin_edit(le: LineEdit) -> void:
+	if _pin_ok(le.text):
+		le.modulate = Color.WHITE
+	else:
+		le.modulate = Color(1.0, 0.88, 0.72)
+
+
+func _pin_ok(s: String) -> bool:
+	if s.length() != 5:
+		return false
+	for i in s.length():
+		var ch := s.substr(i, 1)
+		if ch < "0" or ch > "9":
+			return false
+	return true
+
+
+func _fill_commit_node(gn: GraphNode, n: Dictionary) -> void:
+	var ports: Array = n.get("ports", [])
+	for p_any in ports:
+		if typeof(p_any) != TYPE_DICTIONARY:
+			continue
+		var p: Dictionary = p_any
+		var row := Label.new()
+		row.text = str(p.get("label", p.get("id", "pass-through")))
+		row.autowrap_mode = TextServer.AUTOWRAP_OFF
+		row.add_theme_font_size_override("font_size", GRAPH_FONT)
+		gn.add_child(row)
+	var b := Button.new()
+	b.text = "Go / Commit"
+	b.add_theme_font_size_override("font_size", GRAPH_FONT)
+	b.pressed.connect(_on_run_graph)
+	gn.add_child(b)
+	_commit_btn = b
+	var i := 0
+	for p_any2 in ports:
+		if typeof(p_any2) != TYPE_DICTIONARY:
+			continue
+		var p2: Dictionary = p_any2
+		var enable_in := bool(p2.get("in", true))
+		var enable_out := bool(p2.get("out", true))
+		_set_io_slot(gn, i, enable_in, enable_out)
+		i += 1
+	_set_io_slot(gn, i, false, false)
+
+
+func _set_io_slot(gn: GraphNode, idx: int, enable_in: bool, enable_out: bool) -> void:
+	gn.set_slot(idx, enable_in, 0, WIRE_COLOR, enable_out, 0, WIRE_COLOR)
+
+
+func _wire_spec(w_any: Variant) -> Dictionary:
+	if typeof(w_any) == TYPE_DICTIONARY:
+		var w: Dictionary = w_any
+		return {
+			"from": str(w.get("from", "")),
+			"from_port": int(w.get("from_port", 0)),
+			"to": str(w.get("to", "")),
+			"to_port": int(w.get("to_port", 0)),
+		}
+	if typeof(w_any) == TYPE_ARRAY and w_any.size() >= 2:
+		if w_any.size() >= 4:
+			return {
+				"from": str(w_any[0]),
+				"from_port": int(w_any[1]),
+				"to": str(w_any[2]),
+				"to_port": int(w_any[3]),
+			}
+		return {"from": str(w_any[0]), "from_port": 0, "to": str(w_any[1]), "to_port": 0}
+	return {}
+
+
+func _node_min_size(typ: String, n: Dictionary = {}) -> Vector2:
+	match typ:
+		"process":
+			return Vector2(140, 32)
+		"data", "info":
+			return Vector2(140, 36)
+		"populate":
+			return Vector2(140, 40)
+		"commit":
+			var ports: Array = n.get("ports", [])
+			return Vector2(190, 44 + float(ports.size()) * 18.0)
+		"note":
+			return Vector2(160, 48)
+		_:
+			return Vector2(150, 48)
+
+
+func _style_graph_node(gn: GraphNode, typ: String, override_col: Color = Color(0, 0, 0, 0)) -> void:
 	var col: Color = Color(0.3, 0.32, 0.36)
-	if KIND_COLORS.has(typ):
+	if override_col.a > 0.01:
+		col = override_col
+	elif KIND_COLORS.has(typ):
 		col = KIND_COLORS[typ]
 	var sb := StyleBoxFlat.new()
 	sb.bg_color = col
 	sb.set_corner_radius_all(4)
-	sb.content_margin_left = 8
-	sb.content_margin_right = 8
+	sb.content_margin_left = 10
+	sb.content_margin_right = 10
 	sb.content_margin_top = 6
 	sb.content_margin_bottom = 6
 	gn.add_theme_stylebox_override("titlebar", sb)
@@ -506,11 +793,13 @@ func _style_graph_node(gn: GraphNode, typ: String) -> void:
 	var panel := StyleBoxFlat.new()
 	panel.bg_color = col.darkened(0.35)
 	panel.set_corner_radius_all(4)
-	panel.content_margin_left = 8
-	panel.content_margin_right = 8
-	panel.content_margin_top = 6
-	panel.content_margin_bottom = 8
+	panel.content_margin_left = 10
+	panel.content_margin_right = 10
+	panel.content_margin_top = 8
+	panel.content_margin_bottom = 10
 	gn.add_theme_stylebox_override("panel", panel)
+	gn.add_theme_constant_override("separation", 10)
+	gn.add_theme_constant_override("port_offset", 6)
 
 
 func _on_graph_connection_request(_from: StringName, _from_port: int, _to: StringName, _to_port: int) -> void:
@@ -530,6 +819,10 @@ func _inventory_credentials() -> Dictionary:
 	if worlds.is_empty():
 		return {}
 	var w := worlds[0] as Node
+	if w != null and w.has_method("credentials_from_active_persona"):
+		var persona: Variant = w.call("credentials_from_active_persona")
+		if typeof(persona) == TYPE_DICTIONARY and not (persona as Dictionary).is_empty():
+			return persona
 	if w != null and w.has_method("credentials_from_local_inventory"):
 		var creds: Variant = w.call("credentials_from_local_inventory")
 		if typeof(creds) == TYPE_DICTIONARY:
@@ -538,34 +831,61 @@ func _inventory_credentials() -> Dictionary:
 
 
 func _paper_status_label() -> Label:
-	var creds := _inventory_credentials()
 	var l := Label.new()
 	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	if creds.is_empty():
-		l.text = "no credentials in inventory — you can still type keys"
-		l.add_theme_color_override("font_color", Color(0.92, 0.72, 0.32))
+	if _workspace_id == "w1":
+		l.text = "W1 admits a new user before their first login. Switch to Alice, pick up her public-key slip, G-give it to Helen, switch back, then Populate. Populate never copies the seater's own keys."
+	elif _workspace_id == "w0":
+		l.text = "Fields stay empty until you press Populate (persona or inventory keys). PIN is typed."
 	else:
-		l.text = "autopopulated from inventory (%s keys) — still editable" % str(creds.get("holder_name", "paper"))
-		l.add_theme_color_override("font_color", Color(0.55, 0.82, 0.62))
+		l.text = "Paper keys stay in inventory / persona until you press Populate."
+	l.add_theme_color_override("font_color", Color(0.72, 0.76, 0.8))
 	return l
 
 
-func _apply_inventory_to_graph() -> void:
-	var creds := _inventory_credentials()
+func refresh_persona_fields() -> void:
+	if _screen == "login":
+		_show_login()
+
+
+func _apply_inventory_to_graph(force: bool = false) -> void:
+	var creds := _populate_source()
 	if creds.is_empty():
+		if _workspace_id == "w1":
+			_show_status("W1 needs a new user's public key (not Helen's). Generate Alice, G-give her public-key slip to the seater, then Populate.")
+		else:
+			_show_status("Nothing to populate — generate a persona or pick up paper.")
 		return
 	if _graph_inputs.has("public_key") and _graph_inputs["public_key"] is LineEdit:
 		var pk := _graph_inputs["public_key"] as LineEdit
-		if pk.text.is_empty():
+		if force or pk.text.is_empty():
 			pk.text = str(creds.get("public_key", ""))
-	if _graph_inputs.has("private_key") and _graph_inputs["private_key"] is LineEdit:
+	if _workspace_id != "w1" and _graph_inputs.has("private_key") and _graph_inputs["private_key"] is LineEdit:
 		var sk := _graph_inputs["private_key"] as LineEdit
-		if sk.text.is_empty():
+		if force or sk.text.is_empty():
 			sk.text = str(creds.get("private_key", ""))
-	if _graph_inputs.has("username") and _graph_inputs["username"] is LineEdit and _workspace_id == "w0":
+	if _graph_inputs.has("username") and _graph_inputs["username"] is LineEdit:
 		var un := _graph_inputs["username"] as LineEdit
-		if un.text.is_empty():
+		if force or un.text.is_empty():
 			un.text = str(creds.get("holder_name", ""))
+
+
+func _populate_source() -> Dictionary:
+	if _workspace_id == "w1":
+		return _w1_credential_source()
+	return _inventory_credentials()
+
+
+func _w1_credential_source() -> Dictionary:
+	var worlds := get_tree().get_nodes_in_group("world")
+	if worlds.is_empty():
+		return {}
+	var w := worlds[0] as Node
+	if w != null and w.has_method("w1_admittee_credentials"):
+		var rec: Variant = w.call("w1_admittee_credentials")
+		if typeof(rec) == TYPE_DICTIONARY and not (rec as Dictionary).is_empty():
+			return rec
+	return {}
 
 
 func _graph_text(id: String) -> String:
@@ -592,6 +912,12 @@ func _set_graph_out(id: String, value: String) -> void:
 
 
 func _on_run_graph() -> void:
+	if _busy:
+		return
+	if _workspace_id == "w0" and not _pin_ok(_graph_text("pin")):
+		_show_status("PIN must be exactly 5 digits (0–9).")
+		return
+	_begin_busy()
 	match _workspace_id:
 		"w0":
 			_http_post("/v1/genesis", {
@@ -617,7 +943,88 @@ func _on_run_graph() -> void:
 				"link_did": _graph_text("link"),
 			}, "run_w2")
 		_:
+			_end_busy(false)
 			status_label.text = "Unknown workspace %s" % _workspace_id
+
+
+func _begin_busy() -> void:
+	_busy = true
+	_busy_pulse = false
+	if _commit_btn:
+		_commit_btn.disabled = true
+		_commit_btn.text = "Working… ⏳"
+	if _populate_btn:
+		_populate_btn.disabled = true
+	_paint_commit_working(true)
+	_paint_previews("writing…", true)
+	_show_status("Working — writing names (this can take a while)…")
+	if _busy_timer == null:
+		_busy_timer = Timer.new()
+		_busy_timer.wait_time = 0.45
+		_busy_timer.timeout.connect(_on_busy_pulse)
+		add_child(_busy_timer)
+	_busy_timer.start()
+
+
+func _end_busy(ok: bool) -> void:
+	_stop_busy_timer()
+	_busy = false
+	if _populate_btn:
+		_populate_btn.disabled = false
+	if _commit_btn:
+		_commit_btn.disabled = false
+		_commit_btn.text = "Go / Commit" if not ok else "Go / Commit"
+	_paint_commit_working(false)
+	if ok:
+		_paint_previews("wrote", false, true)
+	else:
+		_paint_previews("", false, false)
+
+
+func _stop_busy_timer() -> void:
+	if _busy_timer:
+		_busy_timer.stop()
+
+
+func _on_busy_pulse() -> void:
+	if not _busy:
+		return
+	_busy_pulse = not _busy_pulse
+	_paint_previews("writing…", true)
+
+
+func _paint_commit_working(working: bool) -> void:
+	if not _graph_nodes.has("run"):
+		return
+	var gn: GraphNode = _graph_nodes["run"]
+	if working:
+		_style_graph_node(gn, "commit", Color(0.78, 0.55, 0.16))
+	else:
+		_style_graph_node(gn, "commit")
+
+
+func _paint_previews(label: String, working: bool, wrote: bool = false) -> void:
+	for id in _graph_kinds.keys():
+		var typ := str(_graph_kinds[id])
+		if typ != "data" and typ != "info" and typ != "process":
+			continue
+		var gn: GraphNode = _graph_nodes[id]
+		var col: Color = KIND_COLORS[typ]
+		if wrote:
+			col = col.lightened(0.12)
+		elif working:
+			col = Color(0.78, 0.52, 0.14) if _busy_pulse else Color(0.58, 0.4, 0.12)
+		_style_graph_node(gn, typ, col)
+		if gn.get_child_count() == 0 or not (gn.get_child(0) is Label):
+			continue
+		var sub := gn.get_child(0) as Label
+		var base := str(gn.get_meta("base_subtitle", sub.text))
+		if wrote:
+			sub.text = "wrote — " + base
+		elif working and not label.is_empty():
+			sub.text = "%s — %s" % [label, base]
+		else:
+			sub.text = base
 
 
 func _show_discovery(graph: Dictionary) -> void:

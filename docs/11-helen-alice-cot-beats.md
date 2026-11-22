@@ -14,7 +14,7 @@ Godot remains veneer; durable mutates are OTP HTTP → IPFS + IOTA Identity ([AD
 
 | Term | Meaning here |
 |------|----------------|
-| **King** | Bootstrap **role**, not a username. First holder is Helen ([ADR 0005](decisions/0005-bootstrap-capability.md)). |
+| **King** | Bootstrap **role**, not a username. First holder is Helen. She holds the **any** capability ([ADR 0005](decisions/0005-bootstrap-capability.md)). |
 | **G** | CoT **first-among-equals** **information** DID — the global starting point. |
 | **D1** | Data: whitelist of **user** pubkeys (CoT membership of people). |
 | **D2** | Data: whitelist of **node EK** pubkeys (boxes). |
@@ -22,7 +22,8 @@ Godot remains veneer; durable mutates are OTP HTTP → IPFS + IOTA Identity ([AD
 | **D4** | Data: pubkey ↔ **PIN** (plaintext on IPFS for now; **tight read cap** — lab exception). |
 | **D5** | Data: user pubkey ↔ DID of that user’s **discovery root**. |
 | **EK** | Node endorsement key (hardware identity). Not the person’s ML-DSA key. |
-| **Capability (authority)** | OTP record: holder pubkey, verb/resource, α/β/ω thresholds, optional pointer at a workspace CID. **Not** the GraphEdit picture. |
+| **Capability (authority)** | OTP record: holder pubkey, verb/resource, α/β/ω thresholds, optional pointer at a workspace CID. **Not** the GraphEdit picture. Access to a workspace or mutate is **cap-checked**; a layout “lock” is not the access control. |
+| **any** | King’s special capability: **do anything anywhere** (bootstrap / do-anything, [ADR 0005](decisions/0005-bootstrap-capability.md)). Helen holds it in this beat — that is why she can run **W1**, not because W1 is unlocked. |
 | **Workspace** | **Data** object: full GraphEdit layout (blocks, positions, wires, lock flags) so the scene can be rebuilt. **Title** is an **information** object Wendy-linked to that data. |
 | **Vault** | Per-user, this-node process holding that user’s key material in **volatile** memory. Elixir `GenServer` (simple). Comment: **lab stand-in — rewrite as seL4 later.** No NIFs. |
 | **Lab supervisor** | Harness god-view: `powered`, `boot_stage`, `zeroised`. Never holds bootstrap cap. |
@@ -66,9 +67,9 @@ After power-on:
 
 ## Capabilities and workspaces
 
-OTP checks the **authority record**. GraphEdit is how a holder **runs** a workspace. Editing a locked graph must be **denied server-side**. Unlocking layout must **not** add verbs.
+OTP checks the **authority record**. Nothing is reachable because a workspace is “locked”; a principal may **run** or **mutate** only with a **covering capability**. GraphEdit is how a holder **runs** a workspace they can already access. Editing a graph in a way that would mint or widen authority must be **denied server-side**. Unlocking layout must **not** add verbs.
 
-Most user caps in this beat **point at** a workspace CID. **Bootstrap** still authors/locks graphs and mints G.
+Most user caps in this beat **point at** a workspace CID. Helen’s King **any** capability (bootstrap / do-anything, [ADR 0005](decisions/0005-bootstrap-capability.md)) covers every verb/resource — including **W1**. Alice is denied W1 because she has **no covering cap**, not because W1 is a special locked object.
 
 **α / β / ω:** each cap has thresholds. The **identity process** (username + PIN) is a King-started child on suitable nodes. **Stub:** success produces numbers that **pass** Alice’s bundle. This is **not** ML-DSA session binding ([ADR 0008](decisions/0008-user-crypto-identity.md) stage 5 later). OTP still trusts `principal_id` until then — **say so in UI/docs**.
 
@@ -84,15 +85,15 @@ Today `Bootstrap.fresh_bootstrap!` onboards King at `node-up` — that **must st
 
 ### W0 — King-making (system)
 
-Entry: **username, public key, private key, PIN**. Sinks: D1–D5 (Helen’s root), **G** + Wendy-links from G to D1–D5, **this EK → D2**. **Vault** block: start Helen’s vault, load private material volatile. Then launcher.
+Entry: **username, public key, private key, 5-digit numeric PIN**. Sinks: D1–D5 (Helen’s root), **G** + Wendy-links from G to D1–D5, **this EK → D2**. **Vault** block: start Helen’s vault, load private material volatile. Then launcher.
 
-### W1 — Introduce user (locked)
+### W1 — Introduce user
 
-Helen only (bootstrap / this workspace cap). Name, **public** key, **generated 5-digit PIN** (show once — paper exception). Wires **D1, D3, D4** (not D2). Creates **D5[Alice]** and Wendy-links Alice’s root to **G**. Grants Alice’s bundle: home, write-info, use-vault (her vault, once it exists), discovery. Graph **immutable** for Alice.
+Cap-gated (Helen’s **any** covers it; a later dedicated “introduce-user” cap could too). Name, **public** key, **generated 5-digit PIN** (show once — paper exception). Wires **D1, D3, D4** (not D2). Creates **D5[Alice]** and Wendy-links Alice’s root to **G**. Grants Alice’s bundle: home, write-info, use-vault (her vault, once it exists), discovery. GraphEdit still **cannot widen authority** (Alice cannot rewire W1 because she has no covering cap, and save-layout cannot mint verbs).
 
-### W2 — Write information + Wendy-links (locked enough to test)
+### W2 — Write information + Wendy-links
 
-Text body. Read/write = lists of pubkeys via **immutable username picker → D3**. Store-on = **this node** for now. Wendy-link to an existing info **or** data name. **Auto Wendy-link** the new object onto **the author’s D5 root**.
+Alice can run this because W1 granted her a **covering cap** pointing at W2 — not because the graph is “unlocked.” Text body. Read/write = lists of pubkeys via **immutable username picker → D3**. Store-on = **this node** for now. Wendy-link to an existing info **or** data name. **Auto Wendy-link** the new object onto **the author’s D5 root**.
 
 ### Home / launcher
 
@@ -119,14 +120,15 @@ Force-directed graph. Edges = Wendy-links. Info vs data **icons**. Titles only. 
 ### Scene 2 — Alice’s paper (outside)
 
 **X:** CoT exists; Alice ∉ D1.  
-**Z:** Alice receives human-readable keys (bank/paper). PIN **not** yet — Helen will generate it.  
-**Z′:** Alice cannot login.
+**Y:** Switch control to a **new Alice body** in the room (Helen remains at node-1 if seated). Identity desk sign: **Collect identities here**.  
+**Z:** Alice receives human-readable keys (bank/paper) on the desk — full keys plus a **public-key copy**. She picks up the public slip and **hands it to Helen** (inventory give). PIN **not** yet — Helen will generate it.  
+**Z′:** Alice cannot login. Alice does **not** see Helen’s seated console.
 
 ### Scene 3 — Helen adds Alice (W1)
 
-**Z:** Name, Alice pubkey, generated PIN; grants workspace caps.  
+**Z:** Switch back to Helen. **Populate** fills name + Alice **public** key from the handed slip (or the generated Alice persona) — **never Helen’s own keys**. Generated PIN; grants workspace caps.  
 **Z′:** Alice on D1/D3/D4; D5[Alice] linked to G. Helen tells Alice the PIN.  
-**Fail:** Alice cannot rewire W1; cannot write D2.
+**Fail:** Alice has no covering cap for W1 (Helen’s **any** does); cannot write D2.
 
 ### Scene 4 — Helen Exit session
 
@@ -147,7 +149,7 @@ Force-directed graph. Edges = Wendy-links. Info vs data **icons**. Titles only. 
 
 **Z:** W2: text; picker for read/write; Wendy-link to existing (e.g. G or a data marker); auto-link to her root.  
 **Z′:** Discovery shows the new info node.  
-**Fail:** no cap; locked graph; picker cannot edit D3; either-end update fails ⇒ no half-link.
+**Fail:** no covering cap; GraphEdit cannot widen authority; picker cannot edit D3; either-end update fails ⇒ no half-link.
 
 ## Named gaps (do not solve here)
 

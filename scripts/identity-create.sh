@@ -38,7 +38,7 @@ else
 fi
 PTB+=(--move-call "${PKG_ID}::identity::new" doc @0x6)
 
-docker run --rm --network host --entrypoint iota \
+timeout --signal=TERM 50 docker run --rm --network host --entrypoint iota \
   -e IOTA_CONFIG_DIR=/data/iota-config \
   -v "${IOTA_DATA}:/data/iota-config" \
   "${IOTA_IMG}" \

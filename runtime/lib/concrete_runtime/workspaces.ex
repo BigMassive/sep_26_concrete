@@ -2,7 +2,9 @@ defmodule ConcreteRuntime.Workspaces do
   @moduledoc """
   W0 / W1 / W2 orchestration. Workspaces are **data** (full GraphEdit layout)
   plus a **title** information object. Caps point at workspaces; GraphEdit
-  cannot mint or widen authority. Locked graphs are denied server-side.
+  cannot mint or widen authority. **Run** is cap-checked (Helen's **any**
+  covers W1). A layout `locked` flag only means save-layout cannot add verbs
+  — it is not the access control.
   """
   use GenServer
 
@@ -57,116 +59,151 @@ defmodule ConcreteRuntime.Workspaces do
       "locked" => false,
       "system" => true,
       "nodes" => [
-        %{"id" => "username", "title" => "Username", "x" => 20, "y" => 20, "type" => "text_in"},
+        %{
+          "id" => "populate",
+          "title" => "Populate",
+          "subtitle" => "press to copy keys from persona / inventory",
+          "x" => 20,
+          "y" => 220,
+          "type" => "populate"
+        },
+        %{"id" => "username", "title" => "Username", "x" => 320, "y" => 20, "type" => "text_in"},
         %{
           "id" => "public_key",
           "title" => "Public key",
-          "x" => 20,
-          "y" => 140,
+          "x" => 320,
+          "y" => 220,
           "type" => "text_in"
         },
         %{
           "id" => "private_key",
           "title" => "Private key (paper)",
-          "x" => 20,
-          "y" => 260,
+          "x" => 320,
+          "y" => 420,
           "type" => "text_in"
         },
-        %{"id" => "pin", "title" => "PIN", "x" => 20, "y" => 380, "type" => "text_in"},
+        %{"id" => "pin", "title" => "PIN", "x" => 320, "y" => 620, "type" => "text_in"},
         %{
-          "id" => "run",
-          "title" => "Run genesis",
-          "subtitle" => "function — will write / start outputs",
-          "x" => 280,
-          "y" => 200,
-          "type" => "run"
+          "id" => "prompt",
+          "title" => "What to do",
+          "subtitle" =>
+            "Press Populate for keys, type a PIN, then Go / Commit. One-shot: replay fails unless you zeroise. Pass-throughs copy fields unmodified. GraphEdit cannot change these links.",
+          "x" => 20,
+          "y" => 620,
+          "type" => "note"
         },
         %{
-          "id" => "preview_note",
-          "title" => "Preview",
-          "subtitle" => "What genesis will do. GraphEdit cannot change these links.",
-          "x" => 280,
+          "id" => "run",
+          "title" => "Genesis",
+          "x" => 640,
           "y" => 20,
-          "type" => "note"
+          "type" => "commit",
+          "ports" => [
+            %{"id" => "username", "label" => "username → D3, D5", "in" => true, "out" => true},
+            %{
+              "id" => "public_key",
+              "label" => "public key → D1, D3, D5",
+              "in" => true,
+              "out" => true
+            },
+            %{
+              "id" => "private_key",
+              "label" => "private key → Vault",
+              "in" => true,
+              "out" => true
+            },
+            %{"id" => "pin", "label" => "PIN → D4", "in" => true, "out" => true},
+            %{
+              "id" => "system",
+              "label" => "system → D2, G, Identity",
+              "in" => false,
+              "out" => true
+            }
+          ]
         },
         %{
           "id" => "d1",
           "title" => "D1",
           "subtitle" => "will write — CoT membership",
-          "x" => 560,
+          "x" => 980,
           "y" => 20,
           "type" => "data"
         },
         %{
           "id" => "d2",
           "title" => "D2",
-          "subtitle" => "will write — this node's EK",
-          "x" => 560,
-          "y" => 120,
+          "subtitle" => "will write — this node's EK (system)",
+          "x" => 980,
+          "y" => 220,
           "type" => "data"
         },
         %{
           "id" => "d3",
           "title" => "D3",
           "subtitle" => "will write — pubkey ↔ username",
-          "x" => 560,
-          "y" => 220,
+          "x" => 980,
+          "y" => 420,
           "type" => "data"
         },
         %{
           "id" => "d4",
           "title" => "D4",
           "subtitle" => "will write — PIN (tight read)",
-          "x" => 560,
-          "y" => 320,
+          "x" => 980,
+          "y" => 620,
           "type" => "data"
         },
         %{
           "id" => "d5",
-          "title" => "D5[Helen]",
-          "subtitle" => "will write — her discovery root",
-          "x" => 560,
-          "y" => 420,
+          "title" => "D5[King]",
+          "subtitle" => "will write — discovery root",
+          "x" => 980,
+          "y" => 820,
           "type" => "data"
         },
         %{
           "id" => "g",
           "title" => "G",
           "subtitle" => "will write — Circle of Trust info",
-          "x" => 820,
-          "y" => 220,
+          "x" => 1280,
+          "y" => 420,
           "type" => "info"
         },
         %{
           "id" => "vault",
-          "title" => "Helen vault",
+          "title" => "Vault",
           "subtitle" => "will start — import paper private key",
-          "x" => 820,
-          "y" => 40,
+          "x" => 1280,
+          "y" => 20,
           "type" => "process"
         },
         %{
           "id" => "identity",
-          "title" => "Identity process",
+          "title" => "Identity",
           "subtitle" => "will start — username + PIN child",
-          "x" => 820,
-          "y" => 400,
+          "x" => 1280,
+          "y" => 820,
           "type" => "process"
         }
       ],
       "wires" => [
-        ["username", "run"],
-        ["public_key", "run"],
-        ["private_key", "run"],
-        ["pin", "run"],
-        ["run", "d1"],
-        ["run", "d2"],
-        ["run", "d3"],
-        ["run", "d4"],
-        ["run", "d5"],
-        ["run", "g"],
-        ["run", "vault"],
-        ["run", "identity"],
+        ["populate", "username"],
+        ["populate", "public_key"],
+        ["populate", "private_key"],
+        wire("username", 0, "run", 0),
+        wire("public_key", 0, "run", 1),
+        wire("private_key", 0, "run", 2),
+        wire("pin", 0, "run", 3),
+        wire("run", 0, "d3", 0),
+        wire("run", 0, "d5", 0),
+        wire("run", 1, "d1", 0),
+        wire("run", 1, "d3", 0),
+        wire("run", 1, "d5", 0),
+        wire("run", 2, "vault", 0),
+        wire("run", 3, "d4", 0),
+        wire("run", 4, "d2", 0),
+        wire("run", 4, "g", 0),
+        wire("run", 4, "identity", 0),
         ["g", "d1"],
         ["g", "d2"],
         ["g", "d3"],
@@ -179,32 +216,126 @@ defmodule ConcreteRuntime.Workspaces do
   def w1_layout do
     %{
       "workspace_id" => "w1",
+      # Layout may not be rewritten to mint verbs. Access is still cap-checked
+      # (Helen’s any covers W1; Alice is denied for lack of cap, not this flag).
       "locked" => true,
       "nodes" => [
-        %{"id" => "username", "title" => "Name", "x" => 40, "y" => 40, "type" => "text_in"},
+        %{
+          "id" => "populate",
+          "title" => "Populate",
+          "subtitle" => "copy the new user's public key (never the seater)",
+          "x" => 20,
+          "y" => 200,
+          "type" => "populate"
+        },
+        %{"id" => "username", "title" => "Name", "x" => 320, "y" => 40, "type" => "text_in"},
         %{
           "id" => "public_key",
-          "title" => "Public key",
-          "x" => 40,
-          "y" => 160,
+          "title" => "Public key (admittee)",
+          "x" => 320,
+          "y" => 240,
           "type" => "text_in"
+        },
+        %{
+          "id" => "prompt",
+          "title" => "What to do",
+          "subtitle" =>
+            "W1 admits Alice before her first login. Generate her, G-give the public-key slip to Helen, then Populate. Never copies Helen's keys. PIN is generated — tell Alice once.",
+          "x" => 20,
+          "y" => 460,
+          "type" => "note"
+        },
+        %{
+          "id" => "run",
+          "title" => "Introduce user",
+          "x" => 640,
+          "y" => 40,
+          "type" => "commit",
+          "ports" => [
+            %{"id" => "username", "label" => "name → D3, D5", "in" => true, "out" => true},
+            %{
+              "id" => "public_key",
+              "label" => "public key → D1, D3, D5",
+              "in" => true,
+              "out" => true
+            },
+            %{
+              "id" => "system",
+              "label" => "generated PIN → D4; link G",
+              "in" => false,
+              "out" => true
+            }
+          ]
         },
         %{
           "id" => "pin",
           "title" => "PIN (show once)",
-          "x" => 380,
-          "y" => 40,
+          "x" => 640,
+          "y" => 480,
           "type" => "text_out"
         },
-        %{"id" => "run", "title" => "Introduce user", "x" => 380, "y" => 200, "type" => "run"}
+        %{
+          "id" => "d1",
+          "title" => "D1",
+          "subtitle" => "will write — add admittee pubkey",
+          "x" => 980,
+          "y" => 20,
+          "type" => "data"
+        },
+        %{
+          "id" => "d3",
+          "title" => "D3",
+          "subtitle" => "will write — pubkey ↔ username",
+          "x" => 980,
+          "y" => 220,
+          "type" => "data"
+        },
+        %{
+          "id" => "d4",
+          "title" => "D4",
+          "subtitle" => "will write — generated PIN",
+          "x" => 980,
+          "y" => 420,
+          "type" => "data"
+        },
+        %{
+          "id" => "d5",
+          "title" => "D5[user]",
+          "subtitle" => "will write — Alice discovery root",
+          "x" => 980,
+          "y" => 620,
+          "type" => "data"
+        },
+        %{
+          "id" => "g",
+          "title" => "G",
+          "subtitle" => "will update — Wendy-link + reader",
+          "x" => 1280,
+          "y" => 220,
+          "type" => "info"
+        }
       ],
-      "wires" => [["username", "run"], ["public_key", "run"], ["run", "pin"]]
+      "wires" => [
+        ["populate", "username"],
+        ["populate", "public_key"],
+        wire("username", 0, "run", 0),
+        wire("public_key", 0, "run", 1),
+        wire("run", 0, "d3", 0),
+        wire("run", 0, "d5", 0),
+        wire("run", 1, "d1", 0),
+        wire("run", 1, "d3", 0),
+        wire("run", 1, "d5", 0),
+        wire("run", 2, "d4", 0),
+        wire("run", 2, "g", 0),
+        wire("run", 2, "pin", 0)
+      ]
     }
   end
 
   def w2_layout do
     %{
       "workspace_id" => "w2",
+      # Same: GraphEdit cannot mint verbs. Alice runs W2 because she has a covering cap.
       "locked" => true,
       "nodes" => [
         %{"id" => "text", "title" => "Text", "x" => 40, "y" => 40, "type" => "text_in"},
@@ -212,27 +343,87 @@ defmodule ConcreteRuntime.Workspaces do
           "id" => "readers",
           "title" => "Read (usernames)",
           "x" => 40,
-          "y" => 160,
+          "y" => 220,
           "type" => "user_picker"
         },
         %{
           "id" => "writers",
           "title" => "Write (usernames)",
           "x" => 40,
-          "y" => 300,
+          "y" => 440,
           "type" => "user_picker"
         },
         %{
           "id" => "link",
           "title" => "Wendy-link DID",
-          "x" => 400,
-          "y" => 40,
+          "x" => 40,
+          "y" => 660,
           "type" => "text_in"
         },
-        %{"id" => "run", "title" => "Write information", "x" => 400, "y" => 200, "type" => "run"}
+        %{
+          "id" => "prompt",
+          "title" => "What to do",
+          "subtitle" =>
+            "Author an information object. Auto-Wendy-links your D5. Optional extra link (e.g. G).",
+          "x" => 40,
+          "y" => 860,
+          "type" => "note"
+        },
+        %{
+          "id" => "run",
+          "title" => "Write information",
+          "x" => 520,
+          "y" => 40,
+          "type" => "commit",
+          "ports" => [
+            %{"id" => "text", "label" => "text → info", "in" => true, "out" => true},
+            %{"id" => "readers", "label" => "readers → info", "in" => true, "out" => true},
+            %{"id" => "writers", "label" => "writers → info", "in" => true, "out" => true},
+            %{"id" => "link", "label" => "Wendy-link → target", "in" => true, "out" => true},
+            %{"id" => "system", "label" => "auto-link D5", "in" => false, "out" => true}
+          ]
+        },
+        %{
+          "id" => "info",
+          "title" => "Info",
+          "subtitle" => "will write — new information object",
+          "x" => 920,
+          "y" => 40,
+          "type" => "info"
+        },
+        %{
+          "id" => "d5",
+          "title" => "D5[you]",
+          "subtitle" => "will link — discovery root",
+          "x" => 920,
+          "y" => 260,
+          "type" => "data"
+        },
+        %{
+          "id" => "target",
+          "title" => "Link target",
+          "subtitle" => "will link — e.g. G (if set)",
+          "x" => 920,
+          "y" => 480,
+          "type" => "info"
+        }
       ],
-      "wires" => [["text", "run"], ["readers", "run"], ["writers", "run"], ["link", "run"]]
+      "wires" => [
+        wire("text", 0, "run", 0),
+        wire("readers", 0, "run", 1),
+        wire("writers", 0, "run", 2),
+        wire("link", 0, "run", 3),
+        wire("run", 0, "info", 0),
+        wire("run", 1, "info", 0),
+        wire("run", 2, "info", 0),
+        wire("run", 3, "target", 0),
+        wire("run", 4, "d5", 0)
+      ]
     }
+  end
+
+  defp wire(from, from_port, to, to_port) do
+    %{"from" => from, "from_port" => from_port, "to" => to, "to_port" => to_port}
   end
 
   @impl true
@@ -251,6 +442,9 @@ defmodule ConcreteRuntime.Workspaces do
         {:reply, {:ok, result}, %{s | workspaces: workspaces}}
 
       {:error, reason} = err when reason in [:genesis_replay, :node_powered_off] ->
+        {:reply, err, s}
+
+      {:error, {:iota_unavailable, _}} = err ->
         {:reply, err, s}
 
       {:error, _} = err ->
@@ -336,8 +530,8 @@ defmodule ConcreteRuntime.Workspaces do
   end
 
   def handle_call(:zeroise, _from, s) do
-    ConcreteRuntime.NodeSupervisor.terminate_all()
     ConcreteRuntime.Session.clear()
+    ConcreteRuntime.NodeSupervisor.terminate_all()
     ConcreteRuntime.Bootstrap.reset_empty()
     ConcreteRuntime.DataObjects.reset()
     ConcreteRuntime.InfoObjects.reset()
@@ -353,7 +547,8 @@ defmodule ConcreteRuntime.Workspaces do
   end
 
   defp run_genesis(attrs) do
-    with :ok <- ConcreteRuntime.Bootstrap.ensure_can_genesis(),
+    with :ok <- require_naming_backend(),
+         :ok <- ConcreteRuntime.Bootstrap.ensure_can_genesis(),
          {:ok, helen} <- ConcreteRuntime.Bootstrap.begin_genesis(attrs),
          :ok <-
            ConcreteRuntime.Vault.ensure_import(
@@ -624,6 +819,9 @@ defmodule ConcreteRuntime.Workspaces do
       String.trim(private_key) == "" ->
         {:error, :missing_private_key}
 
+      not five_digit_pin?(pin) ->
+        {:error, :pin_invalid}
+
       true ->
         with {:ok, principal} <- ConcreteRuntime.IdentityProcess.verify(username, pin),
              true <-
@@ -820,18 +1018,37 @@ defmodule ConcreteRuntime.Workspaces do
   end
 
   defp workspace_layout(w) do
-    case ConcreteRuntime.DataObjects.record(w.data_did) do
-      %{payload: payload} ->
-        payload["layout"] || payload[:layout] || w.layout || layout_for(w.id)
+    # Locked graphs are server-authored; serve the current layout so UX
+    # iteration does not require re-genesis.
+    if Map.get(w, :locked) == true do
+      layout_for(w.id)
+    else
+      case ConcreteRuntime.DataObjects.record(w.data_did) do
+        %{payload: payload} ->
+          payload["layout"] || payload[:layout] || w.layout || layout_for(w.id)
 
-      _ ->
-        w.layout || layout_for(w.id)
+        _ ->
+          w.layout || layout_for(w.id)
+      end
     end
   end
 
   defp layout_for("w1"), do: w1_layout()
   defp layout_for("w2"), do: w2_layout()
   defp layout_for(_), do: %{}
+
+  defp require_naming_backend do
+    mod = Application.get_env(:concrete_runtime, :iota_identity, ConcreteRuntime.IotaIdentity)
+
+    if function_exported?(mod, :configured?, 0) and mod.configured?() do
+      case ConcreteRuntime.Iota.ping() do
+        :ok -> :ok
+        {:error, reason} -> {:error, {:iota_unavailable, reason}}
+      end
+    else
+      :ok
+    end
+  end
 
   defp wipe_attempt do
     ConcreteRuntime.NodeSupervisor.terminate_all()
@@ -846,6 +1063,9 @@ defmodule ConcreteRuntime.Workspaces do
     n = rem(:binary.decode_unsigned(:crypto.strong_rand_bytes(4)), 90_000) + 10_000
     Integer.to_string(n)
   end
+
+  defp five_digit_pin?(pin) when is_binary(pin), do: String.match?(pin, ~r/^\d{5}$/)
+  defp five_digit_pin?(_), do: false
 
   defp load(path) do
     if File.exists?(path) do

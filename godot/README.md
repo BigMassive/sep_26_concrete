@@ -2,7 +2,7 @@
 
 Thin **physical-world UI** for `sep_26_concrete` ([ADR 0001](../docs/decisions/0001-lab-toolchain.md) / [0004](../docs/decisions/0004-world-state-supervisor.md) / [0009](../docs/decisions/0009-godot-scenario-worlds.md)). **Not** ground truth — talks only to OTP HTTP at `http://127.0.0.1:4000`.
 
-**Main scene:** `scenes/world.tscn` — one 3D room, desk, laptop (`node-1`), issuance tray (set dressing), listen-server session. Nested console `scenes/main.tscn` is the node-1 screen (also `--console-only`).
+**Main scene:** `scenes/world.tscn` — one 3D room, desk, laptop (`node-1`), **identity desk** (sign: Collect identities here), listen-server session. Nested console `scenes/main.tscn` is the node-1 screen (also `--console-only`). Each generated **persona is a separate coloured dummy** (capsule torso, sphere head, hinged cylinder limbs) in the room; first-person hides that body's head. Switching control does not retarget the OTP console (that stays with whoever is seated). HUD says **at node-1** only for the seated body.
 
 Helen → Alice CoT: [docs/11](../docs/11-helen-alice-cot-beats.md), coded per [docs/12](../docs/12-helen-alice-build.md). Sessions are **not** signed HTTP (ADR 0008 stage 5 later); OTP still trusts `principal_id`.
 
@@ -25,13 +25,15 @@ Windowed `godot-up` is the **host** (ENet port **24567**). A second process **jo
 # or: godot --path godot --headless -- --join 127.0.0.1:24567
 ```
 
-WASD + mouse look. **E** picks up paper (autopopulates W0 / login public+private fields; still editable) or sits at the laptop. **Esc** stands up; the OTP **session remains** until **Exit session** on the console. One seater.
+WASD + mouse look. Start on the **Personas** landing (type Helen / Alice / any name, Generate, then enter). Each name **spawns a body** (capsule dummy, distinct colour). HUD switcher changes who you walk; Helen stays at the laptop if she was seated. **E** picks up paper or sits. **G** gives a nearby avatar the giver’s **public-key slip** (not whichever paper was picked up last). **Esc** stands up only if **you** are the seater (OTP **session remains** until **Exit session**). One seater.
 
 ## Helen → Alice play (scenes 1–7)
 
-1. Power/sit. Chooser offers **King-making (W0)** — no King at node-up.
-2. Run W0 as **Helen**: pick up her paper first so username / public / private fill (label: autopopulated from inventory). Type PIN. Graph preview shows data/info/process nodes genesis will write or start. Replay fails unless **Zeroise**.
-3. Launcher: run **W1**, type Alice’s name + **public** key. Generated PIN is shown once — tell Alice. Graph is locked (save layout is denied server-side).
+1. Power/sit. Empty-CoT console opens on **Overview** (not linked; wait to connect later, or start genesis). Colour key is on that tab.
+2. Open **W0 - Genesis**. **Populate** copies username / public / private from the persona or inventory (fields stay empty until you press it). Type a **5-digit numeric PIN**. One **Genesis** block pass-throughs those fields into D1–D5 / Vault and **Go / Commit** writes them (button and data blocks show a working cue). Replay fails unless **Zeroise**.
+
+Live HTTP check (no Godot): `./scripts/w0-smoke.sh` (W0) and `./scripts/beat-smoke.sh` (scenes 1–7 through Alice W2). Lab-up + node-up. IOTA down is the 502 PTB.
+3. Launcher: Helen stays seated. Switch to **Alice** (new body near the identity desk). Pick up her **public-key copy**, walk to Helen, **G** to put it in Helen’s inventory. Switch back to Helen → **W1** → **Populate** (Alice’s name and public key — never Helen’s). Generated PIN is shown once — tell Alice. Helen can run W1 because she holds **any**; Alice cannot (no covering cap). GraphEdit still cannot mint verbs (save layout is denied server-side).
 4. **Exit session** (not only Esc).
 5. **Login** as Alice: username + PIN + paper **private** key. Starts Alice’s vault. Wrong PIN / not on D1 / no key fail closed.
 6. **Discovery**: force graph from D5[Alice]; info she may read; data markers only (no D4 bytes).

@@ -6,11 +6,13 @@ defmodule ConcreteRuntime.Bootstrap do
   mint. Replay fails unless zeroise. Lab supervisor is not the holder.
 
   Capability records (holder, verb/resource, α/β/ω stub, optional workspace
-  pointer) live here. GraphEdit pictures cannot widen them.
+  pointer) live here. GraphEdit pictures cannot widen them. Helen (King) holds
+  **any** (bootstrap/do-anything): that covering cap is why she can run W1.
+  Access is cap-checked; a workspace lock flag is not the access control.
   """
   use GenServer
 
-  @bootstrap_meaning "bootstrap/do-anything"
+  @bootstrap_meaning "any"
 
   def start_link(opts) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
@@ -264,6 +266,7 @@ defmodule ConcreteRuntime.Bootstrap do
       not is_binary(principal_id) or principal_id == "" ->
         {:error, :capability_denied}
 
+      # King **any** cap (ADR 0005 bootstrap/do-anything): covers every action.
       principal_id in state.bootstrap_holders ->
         {:ok, :allowed, @bootstrap_meaning}
 
@@ -323,6 +326,9 @@ defmodule ConcreteRuntime.Bootstrap do
 
       pin == "" ->
         {:error, :pin_required}
+
+      not five_digit_pin?(pin) ->
+        {:error, :pin_invalid}
 
       true ->
         helen = %{
@@ -575,6 +581,9 @@ defmodule ConcreteRuntime.Bootstrap do
   defp short_id do
     :crypto.strong_rand_bytes(6) |> Base.url_encode64(padding: false)
   end
+
+  defp five_digit_pin?(pin) when is_binary(pin), do: String.match?(pin, ~r/^\d{5}$/)
+  defp five_digit_pin?(_), do: false
 
   defp now, do: DateTime.utc_now() |> DateTime.to_iso8601()
 end

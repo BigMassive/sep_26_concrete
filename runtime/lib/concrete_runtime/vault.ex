@@ -56,8 +56,16 @@ defmodule ConcreteRuntime.Vault do
 
   def drop_use(principal_id) when is_binary(principal_id) do
     case lookup(principal_id) do
-      {:ok, pid} -> GenServer.call(pid, {:drop_use, principal_id})
-      :error -> :ok
+      {:ok, pid} ->
+        try do
+          GenServer.call(pid, {:drop_use, principal_id})
+        catch
+          :exit, {:noproc, _} -> :ok
+          :exit, {:normal, _} -> :ok
+        end
+
+      :error ->
+        :ok
     end
   end
 

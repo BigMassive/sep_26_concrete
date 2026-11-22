@@ -25,38 +25,46 @@ layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-theme_override_constants/margin_left = 16
-theme_override_constants/margin_top = 12
-theme_override_constants/margin_right = 16
-theme_override_constants/margin_bottom = 12
+theme_override_constants/margin_left = 8
+theme_override_constants/margin_top = 6
+theme_override_constants/margin_right = 8
+theme_override_constants/margin_bottom = 6
 
 [node name="VBox" type="VBoxContainer" parent="Margin"]
 layout_mode = 2
 theme_override_constants/separation = 8
 
 [node name="Title" type="Label" parent="Margin/VBox"]
+unique_name_in_owner = true
 layout_mode = 2
+visible = false
 theme_override_font_sizes/font_size = 24
 text = "CONCRETE — node-1 console"
 
 [node name="Subtitle" type="Label" parent="Margin/VBox"]
+unique_name_in_owner = true
 layout_mode = 2
+visible = false
 theme_override_colors/font_color = Color(0.7, 0.72, 0.78, 1)
 theme_override_font_sizes/font_size = 13
 text = "OTP is ground truth. Sessions are not signed HTTP (0008-5 later)."
 
 [node name="SessionLabel" type="Label" parent="Margin/VBox"]
 unique_name_in_owner = true
+visible = false
 layout_mode = 2
 text = "Session: —"
 
 [node name="Status" type="Label" parent="Margin/VBox"]
 unique_name_in_owner = true
+visible = false
 layout_mode = 2
 autowrap_mode = 3
 text = "Connecting…"
 
 [node name="HSep" type="HSeparator" parent="Margin/VBox"]
+unique_name_in_owner = true
+visible = false
 layout_mode = 2
 
 [node name="ScreenHost" type="VBoxContainer" parent="Margin/VBox"]

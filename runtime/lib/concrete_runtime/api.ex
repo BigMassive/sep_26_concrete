@@ -153,6 +153,12 @@ defmodule ConcreteRuntime.API do
       {:error, :capability_denied} ->
         send_json(conn, 403, %{error: "capability_denied"})
 
+      {:error, :pin_required} ->
+        send_json(conn, 400, %{error: "pin_required", detail: "Enter a 5-digit numeric PIN"})
+
+      {:error, :pin_invalid} ->
+        send_json(conn, 400, %{error: "pin_invalid", detail: "PIN must be exactly 5 digits"})
+
       {:error, reason} ->
         send_iota_or_generic_error(conn, reason)
     end
@@ -168,6 +174,9 @@ defmodule ConcreteRuntime.API do
 
       {:error, :pin_mismatch} ->
         send_json(conn, 403, %{error: "pin_mismatch"})
+
+      {:error, :pin_invalid} ->
+        send_json(conn, 400, %{error: "pin_invalid", detail: "PIN must be exactly 5 digits"})
 
       {:error, :not_on_d1} ->
         send_json(conn, 403, %{error: "not_on_d1"})
@@ -602,6 +611,13 @@ defmodule ConcreteRuntime.API do
 
   defp send_iota_or_generic_error(conn, reason) do
     case reason do
+      {:iota_unavailable, detail} ->
+        send_json(conn, 503, %{
+          error: "iota_unavailable",
+          detail: inspect(detail),
+          hint: "IOTA localnet is down — ./scripts/lab-up.sh then retry genesis"
+        })
+
       {:iota_identity_create_failed, detail} ->
         send_json(conn, 502, %{error: "iota_identity_create_failed", detail: inspect(detail)})
 

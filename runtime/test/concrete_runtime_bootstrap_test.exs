@@ -19,15 +19,78 @@ defmodule ConcreteRuntime.BootstrapTest do
     layout = ConcreteRuntime.Workspaces.w0_layout()
     by_id = Map.new(layout["nodes"], &{&1["id"], &1})
 
-    assert by_id["run"]["type"] == "run"
+    assert by_id["run"]["type"] == "commit"
+    assert length(by_id["run"]["ports"]) == 5
+    assert by_id["populate"]["type"] == "populate"
+    assert by_id["prompt"]["type"] == "note"
+    refute Map.has_key?(by_id, "pt_username")
+    refute Map.has_key?(by_id, "pt_pubkey")
     assert by_id["d2"]["type"] == "data"
     assert by_id["d2"]["subtitle"] =~ "will write"
     assert by_id["g"]["type"] == "info"
     assert by_id["vault"]["type"] == "process"
     assert by_id["identity"]["type"] == "process"
-    assert ["run", "d2"] in layout["wires"]
-    assert ["run", "vault"] in layout["wires"]
-    assert ["run", "identity"] in layout["wires"]
+    assert by_id["d2"]["y"] - by_id["d1"]["y"] >= 180
+    assert ["populate", "username"] in layout["wires"]
+
+    assert %{
+             "from" => "username",
+             "from_port" => 0,
+             "to" => "run",
+             "to_port" => 0
+           } in layout["wires"]
+
+    assert %{
+             "from" => "run",
+             "from_port" => 1,
+             "to" => "d1",
+             "to_port" => 0
+           } in layout["wires"]
+
+    assert %{
+             "from" => "run",
+             "from_port" => 2,
+             "to" => "vault",
+             "to_port" => 0
+           } in layout["wires"]
+
+    assert %{
+             "from" => "run",
+             "from_port" => 3,
+             "to" => "d4",
+             "to_port" => 0
+           } in layout["wires"]
+
+    assert %{
+             "from" => "run",
+             "from_port" => 4,
+             "to" => "identity",
+             "to_port" => 0
+           } in layout["wires"]
+
+    refute Enum.any?(layout["wires"], &("prompt" in List.wrap(&1)))
+  end
+
+  test "W1 layout previews D1/D3/D4/D5/G and uses a combined commit block" do
+    layout = ConcreteRuntime.Workspaces.w1_layout()
+    by_id = Map.new(layout["nodes"], &{&1["id"], &1})
+
+    assert by_id["run"]["type"] == "commit"
+    assert by_id["populate"]["type"] == "populate"
+    assert by_id["d1"]["type"] == "data"
+    assert by_id["d5"]["subtitle"] =~ "will write"
+    assert by_id["g"]["type"] == "info"
+    refute Map.has_key?(by_id, "d2")
+  end
+
+  test "W2 layout previews the new info object and D5 auto-link" do
+    layout = ConcreteRuntime.Workspaces.w2_layout()
+    by_id = Map.new(layout["nodes"], &{&1["id"], &1})
+
+    assert by_id["run"]["type"] == "commit"
+    assert by_id["info"]["type"] == "info"
+    assert by_id["d5"]["type"] == "data"
+    assert by_id["d5"]["subtitle"] =~ "will link"
   end
 
   test "first boot is an empty CoT — no auto-King" do
@@ -39,6 +102,13 @@ defmodule ConcreteRuntime.BootstrapTest do
 
     assert {:error, :capability_denied} =
              ConcreteRuntime.Bootstrap.authorize("mldsa87:anyone", "mutate")
+  end
+
+  test "genesis rejects a PIN that is not five digits" do
+    bad = Map.put(TestKit.helen_attrs(), :pin, "12")
+    assert {:error, :pin_invalid} = ConcreteRuntime.Workspaces.genesis(bad)
+    letters = Map.put(TestKit.helen_attrs(), :pin, "abcde")
+    assert {:error, :pin_invalid} = ConcreteRuntime.Workspaces.genesis(letters)
   end
 
   test "genesis mints bootstrap cap to Helen and writes this EK on D2" do

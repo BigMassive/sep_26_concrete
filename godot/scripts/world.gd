@@ -9,6 +9,8 @@ const PLAYER_SCENE := preload("res://scenes/player.tscn")
 const CONSOLE_SCENE := preload("res://scenes/main.tscn")
 const SIT_RANGE := 2.4
 const PICKUP_RANGE := 1.8
+const GIVE_RANGE := 2.2
+const LOCAL_AVATAR_BASE := 1000
 
 ## OTP is ground truth. Paper tray is set dressing this beat (docs/11): pickup
 ## does not onboard King. Keying is W0 genesis / login import on the console.
@@ -21,6 +23,9 @@ const PICKUP_RANGE := 1.8
 @onready var seated_layer: Control = %SeatedLayer
 @onready var subviewport: SubViewport = %ConsoleViewport
 @onready var hint_label: Label = %SeatedHint
+@onready var persona_badge: Label = %PersonaBadge
+@onready var persona_edge: VBoxContainer = %PersonaEdge
+@onready var persona_layer: Control = %PersonaLayer
 
 var join_address: String = ""
 var playbook_path: String = ""
@@ -30,6 +35,12 @@ var console: NodeConsole = null
 var documents: Dictionary = {}
 var laptop_pos: Vector3 = Vector3(3.0, 0.85, -4.0)
 var _interact_cool: Dictionary = {}
+var personas: Array = []
+var active_persona_name: String = ""
+var _paper_parent: Node3D = null
+var _persona_list: VBoxContainer = null
+var _persona_name_edit: LineEdit = null
+var _persona_enter: Button = null
 
 
 func _ready() -> void:
@@ -41,7 +52,15 @@ func _ready() -> void:
 	spawner.add_spawnable_scene("res://scenes/player.tscn")
 	_build_room()
 	_setup_console()
+	_setup_persona_hud()
 	_setup_multiplayer()
+	if not playbook_path.is_empty() or OS.has_feature("headless"):
+		_ensure_persona("Helen")
+		_ensure_persona("Alice")
+		_select_persona("Helen")
+		_hide_persona_landing()
+	else:
+		_show_persona_landing()
 	if not playbook_path.is_empty():
 		var runner := preload("res://scripts/playbook_runner.gd").new()
 		runner.world = self
@@ -92,8 +111,8 @@ func _setup_multiplayer() -> void:
 		multiplayer.peer_connected.connect(_on_peer_connected)
 		multiplayer.peer_disconnected.connect(_on_peer_disconnected)
 		_add_player(1)
-		session_label.text = "Host · listen :%s · E interact · Esc unsit" % SESSION_PORT
-		if not OS.has_feature("headless"):
+		session_label.text = "Host · listen :%s · E interact · G give paper · Esc unsit" % SESSION_PORT
+		if not OS.has_feature("headless") and not persona_landing_open():
 			Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	else:
 		var host := "127.0.0.1"
@@ -118,7 +137,7 @@ func _setup_multiplayer() -> void:
 
 func _on_connected() -> void:
 	session_label.text = "Joined · peer %s" % multiplayer.get_unique_id()
-	if not OS.has_feature("headless"):
+	if not OS.has_feature("headless") and not persona_landing_open():
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 
 
@@ -154,12 +173,36 @@ func _add_player(id: int) -> void:
 	p.name = str(id)
 	p.position = Vector3(-2.0 + float((id - 1) % 4) * 1.3, 0.05, 3.6)
 	players_root.add_child(p, true)
+	if p is Player and id == multiplayer.get_unique_id():
+		(p as Player).set_controlled(true)
 
 
 func local_player() -> Player:
 	var id := multiplayer.get_unique_id()
 	if players_root.has_node(str(id)):
 		return players_root.get_node(str(id)) as Player
+	return null
+
+
+func controlled_player() -> Player:
+	var named := _player_for_persona(active_persona_name)
+	if named != null:
+		return named
+	return local_player()
+
+
+func _player_by_peer(peer_id: int) -> Player:
+	if players_root.has_node(str(peer_id)):
+		return players_root.get_node(str(peer_id)) as Player
+	return null
+
+
+func _player_for_persona(name: String) -> Player:
+	if name.is_empty():
+		return null
+	for child in players_root.get_children():
+		if child is Player and str(child.persona_name) == name:
+			return child
 	return null
 
 
@@ -181,25 +224,39 @@ func _process(_delta: float) -> void:
 
 func _input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_ESCAPE:
-		if _local_is_seated() or seated_peer_id == multiplayer.get_unique_id():
-			request_unsit.rpc()
+		if persona_landing_open():
+			if not active_persona_name.is_empty():
+				_hide_persona_landing()
+			get_viewport().set_input_as_handled()
+			return
+		var c := controlled_player()
+		if c != null and c.seated:
+			_request_unsit_controlled()
 			get_viewport().set_input_as_handled()
 			return
 		if Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
 			Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 			get_viewport().set_input_as_handled()
-	if event is InputEventMouseButton and event.pressed and not _local_is_seated():
+	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_G:
+		if not persona_landing_open():
+			_try_give()
+			get_viewport().set_input_as_handled()
+	if event is InputEventMouseButton and event.pressed and not _local_is_seated() and not persona_landing_open():
 		if Input.mouse_mode != Input.MOUSE_MODE_CAPTURED:
 			Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 
 
 func _local_is_seated() -> bool:
-	var p := local_player()
+	var p := controlled_player()
 	return p != null and p.seated
 
 
 func _update_hud() -> void:
-	var p := local_player()
+	_refresh_persona_badge()
+	var p := controlled_player()
+	if persona_landing_open():
+		prompt_label.text = ""
+		return
 	if p == null:
 		prompt_label.text = ""
 		inventory_label.text = "Inventory: —"
@@ -216,8 +273,14 @@ func _update_hud() -> void:
 		return
 	var near_doc := _nearest_free_document(p.global_position)
 	var d_lap := _xz_dist(p.global_position, laptop_pos)
+	var give_to := _nearest_give_target(p)
 	if near_doc != "" and _xz_dist(p.global_position, documents[near_doc].position) < PICKUP_RANGE:
-		prompt_label.text = "E · pick up paper (fills W0 / login keys)"
+		prompt_label.text = "E · pick up paper"
+	elif give_to != null:
+		var who := str(give_to.persona_name)
+		if who.is_empty():
+			who = "the other person"
+		prompt_label.text = "G · give %s to %s" % [_paper_label(_give_doc_id(p)), who]
 	elif d_lap < SIT_RANGE:
 		if seated_peer_id != 0 and seated_peer_id != p.peer_id:
 			prompt_label.text = "Laptop occupied (one seater)"
@@ -225,6 +288,104 @@ func _update_hud() -> void:
 			prompt_label.text = "E · sit at node-1 console"
 	else:
 		prompt_label.text = ""
+
+
+func _nearest_give_target(giver: Player) -> Player:
+	if giver == null or giver.inventory.size() == 0:
+		return null
+	var best: Player = null
+	var best_d := GIVE_RANGE
+	for child in players_root.get_children():
+		if not (child is Player) or child == giver:
+			continue
+		var d := _xz_dist(giver.global_position, child.global_position)
+		if d < best_d:
+			best_d = d
+			best = child
+	return best
+
+
+func _try_give() -> void:
+	var giver := controlled_player()
+	if giver == null or giver.seated:
+		return
+	if multiplayer.is_server():
+		_server_give(giver.peer_id)
+	else:
+		request_give.rpc()
+
+
+@rpc("any_peer", "reliable")
+func request_give() -> void:
+	if not multiplayer.is_server():
+		return
+	var sender := multiplayer.get_remote_sender_id()
+	if sender == 0:
+		sender = 1
+	_server_give(sender)
+
+
+func _server_give(giver_id: int) -> void:
+	var giver := _player_by_peer(giver_id)
+	if giver == null or giver.inventory.size() == 0:
+		return
+	var target := _nearest_give_target(giver)
+	if target == null:
+		return
+	var doc_id := _give_doc_id(giver)
+	if doc_id.is_empty():
+		return
+	var items := giver.inventory.duplicate()
+	var idx := -1
+	for i in range(items.size()):
+		if str(items[i]) == doc_id:
+			idx = i
+			break
+	if idx < 0:
+		return
+	items.remove_at(idx)
+	giver.apply_bind(giver.principal_id, items)
+	var theirs := target.inventory.duplicate()
+	if not theirs.has(doc_id):
+		theirs.append(doc_id)
+	target.apply_bind(target.principal_id, theirs)
+	if documents.has(doc_id):
+		documents[doc_id].taken = true
+		documents[doc_id].taken_by = target.peer_id
+	replicate_bind.rpc(giver.peer_id, giver.principal_id, items)
+	replicate_bind.rpc(target.peer_id, target.principal_id, theirs)
+
+
+func _give_doc_id(giver: Player) -> String:
+	if giver == null or giver.inventory.size() == 0:
+		return ""
+	var own_slip := ""
+	var any_slip := ""
+	for i in range(giver.inventory.size()):
+		var doc_id := str(giver.inventory[i])
+		var doc: Variant = documents.get(doc_id)
+		if typeof(doc) != TYPE_DICTIONARY:
+			continue
+		if str(doc.get("kind", "")) != "public_slip":
+			continue
+		any_slip = doc_id
+		if str(doc.get("holder_name", "")) == str(giver.persona_name):
+			own_slip = doc_id
+	if not own_slip.is_empty():
+		return own_slip
+	if not any_slip.is_empty():
+		return any_slip
+	return str(giver.inventory[giver.inventory.size() - 1])
+
+
+func _request_unsit_controlled() -> void:
+	var c := controlled_player()
+	if c == null or not c.seated:
+		return
+	if multiplayer.is_server():
+		_server_unsit(c.peer_id)
+	else:
+		request_unsit.rpc()
 
 
 func _xz_dist(a: Vector3, b: Vector3) -> float:
@@ -275,9 +436,7 @@ func apply_pickup(doc_id: String, by_peer: int) -> void:
 		var mesh: Node3D = documents[doc_id].mesh
 		if mesh:
 			mesh.visible = false
-	if by_peer != multiplayer.get_unique_id():
-		return
-	var p := local_player()
+	var p := _player_by_peer(by_peer)
 	if p == null:
 		return
 	var items := p.inventory.duplicate()
@@ -285,9 +444,7 @@ func apply_pickup(doc_id: String, by_peer: int) -> void:
 		items.append(doc_id)
 	p.apply_bind(p.principal_id, items)
 	if multiplayer.is_server():
-		_server_store_bind(multiplayer.get_unique_id(), p.principal_id, items)
-	else:
-		report_bind.rpc_id(1, p.principal_id, items)
+		_server_store_bind(by_peer, p.principal_id, items)
 
 
 @rpc("any_peer", "reliable")
@@ -330,6 +487,16 @@ func _server_sit(peer_id: int) -> void:
 	seat_changed.rpc(peer_id)
 
 
+func _server_unsit(peer_id: int) -> void:
+	if seated_peer_id != peer_id:
+		return
+	var p := _player_by_peer(peer_id)
+	if p:
+		p.seated = false
+	seated_peer_id = 0
+	seat_changed.rpc(0)
+
+
 @rpc("any_peer", "reliable", "call_local")
 func request_unsit() -> void:
 	if not multiplayer.is_server():
@@ -337,12 +504,8 @@ func request_unsit() -> void:
 	var sender := multiplayer.get_remote_sender_id()
 	if sender == 0:
 		sender = 1
-	if seated_peer_id != sender:
-		return
-	if players_root.has_node(str(sender)):
-		players_root.get_node(str(sender)).seated = false
-	seated_peer_id = 0
-	seat_changed.rpc(0)
+	if seated_peer_id == sender:
+		_server_unsit(sender)
 
 
 @rpc("authority", "reliable", "call_local")
@@ -351,14 +514,20 @@ func seat_changed(peer_id: int) -> void:
 	for child in players_root.get_children():
 		if child is Player:
 			child.seated = child.peer_id == peer_id and peer_id != 0
-	if peer_id == multiplayer.get_unique_id():
+	_sync_console_visibility()
+
+
+func _sync_console_visibility() -> void:
+	var c := controlled_player()
+	if c != null and c.seated:
 		_enter_console()
 	else:
 		_leave_console()
+	_refresh_persona_badge()
 
 
 func _on_console_session(principal_id: String, username: String) -> void:
-	var p := local_player()
+	var p := controlled_player()
 	if p == null:
 		return
 	p.apply_bind(principal_id, p.inventory)
@@ -376,7 +545,7 @@ func _enter_console() -> void:
 
 func _leave_console() -> void:
 	seated_layer.visible = false
-	if local_player() != null and not OS.has_feature("headless"):
+	if controlled_player() != null and not OS.has_feature("headless") and not persona_landing_open():
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 
 
@@ -431,24 +600,26 @@ func _build_room() -> void:
 	screen.rotation_degrees = Vector3(-18, 0, 0)
 	laptop_pos = Vector3(3.0, 0.0, -2.85)
 
-	_box(room, Vector3(-3.2, 0.52, -4.0), Vector3(1.1, 0.06, 0.7), Color(0.55, 0.45, 0.32))
-	_spawn_document(room, "paper-1", Vector3(-3.45, 0.62, -4.05), Color(0.93, 0.91, 0.82), {
-		"holder_name": "Helen",
-		"public_key": "mldsa87:paper-helen",
-		"private_key": "paper-helen-sk",
-	})
-	_spawn_document(room, "paper-2", Vector3(-2.95, 0.62, -3.95), Color(0.9, 0.88, 0.78), {
-		"holder_name": "Alice",
-		"public_key": "mldsa87:paper-alice",
-		"private_key": "paper-alice-sk",
-	})
+	_box(room, Vector3(-3.2, 0.52, -4.0), Vector3(1.8, 0.08, 1.1), Color(0.48, 0.38, 0.26))
+	_box(room, Vector3(-3.85, 0.22, -4.4), Vector3(0.1, 0.44, 0.1), Color(0.32, 0.22, 0.14))
+	_box(room, Vector3(-2.55, 0.22, -4.4), Vector3(0.1, 0.44, 0.1), Color(0.32, 0.22, 0.14))
+	_box(room, Vector3(-3.85, 0.22, -3.6), Vector3(0.1, 0.44, 0.1), Color(0.32, 0.22, 0.14))
+	_box(room, Vector3(-2.55, 0.22, -3.6), Vector3(0.1, 0.44, 0.1), Color(0.32, 0.22, 0.14))
+	_paper_parent = room
 
 	var tray_tag := Label3D.new()
-	tray_tag.text = "Issuance tray\n(set dressing — keying is W0 / login)"
-	tray_tag.position = Vector3(-3.2, 1.15, -4.0)
+	tray_tag.text = "Collect identities here"
+	tray_tag.position = Vector3(-3.2, 1.25, -4.0)
 	tray_tag.font_size = 28
 	tray_tag.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	room.add_child(tray_tag)
+	var tray_sub := Label3D.new()
+	tray_sub.text = "papers appear when you generate a persona"
+	tray_sub.position = Vector3(-3.2, 1.05, -4.0)
+	tray_sub.font_size = 16
+	tray_sub.modulate = Color(0.9, 0.86, 0.78)
+	tray_sub.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	room.add_child(tray_sub)
 
 	var node_tag := Label3D.new()
 	node_tag.text = "node-1  :4000"
@@ -458,32 +629,424 @@ func _build_room() -> void:
 	room.add_child(node_tag)
 
 
-func credentials_from_local_inventory() -> Dictionary:
-	var p := local_player()
-	if p == null:
+func persona_landing_open() -> bool:
+	return persona_layer != null and persona_layer.visible
+
+
+func credentials_from_active_persona() -> Dictionary:
+	var rec := _persona_named(active_persona_name)
+	if rec.is_empty():
 		return {}
-	for i in range(p.inventory.size() - 1, -1, -1):
+	return {
+		"source": "persona",
+		"paper_id": str(rec.get("paper_id", "")),
+		"holder_name": str(rec.get("name", "")),
+		"public_key": str(rec.get("public_key", "")),
+		"private_key": str(rec.get("private_key", "")),
+	}
+
+
+func w1_admittee_credentials() -> Dictionary:
+	var operator := _w1_operator()
+	var skip := _w1_skip_names(operator)
+	var slip: Dictionary = {}
+	var other: Dictionary = {}
+	for rec_any in _papers_from_player(operator):
+		if typeof(rec_any) != TYPE_DICTIONARY:
+			continue
+		var rec: Dictionary = rec_any
+		var holder := str(rec.get("holder_name", ""))
+		if holder.is_empty() or skip.has(holder):
+			continue
+		if str(rec.get("kind", "")) == "public_slip":
+			slip = rec
+		else:
+			other = rec
+	var picked: Dictionary = slip if not slip.is_empty() else other
+	if not picked.is_empty():
+		return {
+			"source": "inventory",
+			"paper_id": str(picked.get("paper_id", "")),
+			"holder_name": str(picked.get("holder_name", "")),
+			"public_key": str(picked.get("public_key", "")),
+			"private_key": "",
+		}
+	var fallback: Dictionary = {}
+	for rec_any in personas:
+		var rec: Dictionary = rec_any
+		var name := str(rec.get("name", ""))
+		if name.is_empty() or skip.has(name):
+			continue
+		fallback = rec
+	if fallback.is_empty():
+		return {}
+	return {
+		"source": "persona",
+		"paper_id": str(fallback.get("paper_id", "")),
+		"holder_name": str(fallback.get("name", "")),
+		"public_key": str(fallback.get("public_key", "")),
+		"private_key": "",
+	}
+
+
+func _w1_operator() -> Player:
+	if seated_peer_id != 0:
+		var seated := _player_by_peer(seated_peer_id)
+		if seated != null:
+			return seated
+	return controlled_player()
+
+
+func _w1_skip_names(operator: Player) -> Dictionary:
+	var skip := {}
+	if operator != null and not str(operator.persona_name).is_empty():
+		skip[str(operator.persona_name)] = true
+	return skip
+
+
+func _setup_persona_hud() -> void:
+	_build_persona_landing()
+	_rebuild_persona_edge()
+	_refresh_persona_badge()
+
+
+func _build_persona_landing() -> void:
+	for c in persona_layer.get_children():
+		persona_layer.remove_child(c)
+		c.queue_free()
+	var dim := ColorRect.new()
+	dim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	dim.color = Color(0.04, 0.05, 0.07, 0.82)
+	persona_layer.add_child(dim)
+	var panel := PanelContainer.new()
+	panel.custom_minimum_size = Vector2(560, 480)
+	panel.set_anchors_preset(Control.PRESET_CENTER)
+	panel.offset_left = -280.0
+	panel.offset_top = -240.0
+	panel.offset_right = 280.0
+	panel.offset_bottom = 240.0
+	persona_layer.add_child(panel)
+	var inner := VBoxContainer.new()
+	inner.add_theme_constant_override("separation", 10)
+	panel.add_child(inner)
+	var title := Label.new()
+	title.text = "Personas"
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 26)
+	inner.add_child(title)
+	var blurb := Label.new()
+	blurb.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	blurb.text = "Each generated name is a separate body in the room (colour only, for now). Switch who you walk. OTP login stays with the seated body — Alice will not see Helen's console. Collect papers at the identity desk and G-give them to another avatar."
+	inner.add_child(blurb)
+	_persona_list = VBoxContainer.new()
+	_persona_list.add_theme_constant_override("separation", 6)
+	inner.add_child(_persona_list)
+	var add_row := HBoxContainer.new()
+	add_row.add_theme_constant_override("separation", 8)
+	_persona_name_edit = LineEdit.new()
+	_persona_name_edit.placeholder_text = "Name (Helen, Alice, …)"
+	_persona_name_edit.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_persona_name_edit.text_submitted.connect(func(t: String) -> void: _on_generate_persona(t))
+	add_row.add_child(_persona_name_edit)
+	var gen := Button.new()
+	gen.text = "Generate"
+	gen.pressed.connect(func() -> void: _on_generate_persona(_persona_name_edit.text))
+	add_row.add_child(gen)
+	inner.add_child(add_row)
+	_persona_enter = Button.new()
+	_persona_enter.text = "Enter world"
+	_persona_enter.pressed.connect(_hide_persona_landing)
+	inner.add_child(_persona_enter)
+	_refresh_persona_list()
+
+
+func _refresh_persona_list() -> void:
+	if _persona_list == null:
+		return
+	for c in _persona_list.get_children():
+		_persona_list.remove_child(c)
+		c.queue_free()
+	if personas.is_empty():
+		var empty := Label.new()
+		empty.text = "No personas yet."
+		_persona_list.add_child(empty)
+	for rec_any in personas:
+		var rec: Dictionary = rec_any
+		var name := str(rec.get("name", ""))
+		var row := HBoxContainer.new()
+		var lab := Label.new()
+		lab.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		lab.text = name
+		if name == active_persona_name:
+			lab.text = "%s  (controlling)" % name
+		row.add_child(lab)
+		var sw := Button.new()
+		sw.text = "Switch"
+		sw.pressed.connect(_select_persona.bind(name))
+		row.add_child(sw)
+		_persona_list.add_child(row)
+	if _persona_enter:
+		_persona_enter.disabled = active_persona_name.is_empty()
+		if active_persona_name.is_empty():
+			_persona_enter.text = "Enter world"
+		else:
+			_persona_enter.text = "Enter world as %s" % active_persona_name
+
+
+func _rebuild_persona_edge() -> void:
+	for c in persona_edge.get_children():
+		persona_edge.remove_child(c)
+		c.queue_free()
+	var head := Label.new()
+	head.text = "Switch"
+	head.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	persona_edge.add_child(head)
+	for rec_any in personas:
+		var rec: Dictionary = rec_any
+		var name := str(rec.get("name", ""))
+		var b := Button.new()
+		b.text = name
+		b.toggle_mode = true
+		b.button_pressed = name == active_persona_name
+		b.pressed.connect(_select_persona.bind(name))
+		persona_edge.add_child(b)
+	var roster := Button.new()
+	roster.text = "Personas…"
+	roster.pressed.connect(_show_persona_landing)
+	persona_edge.add_child(roster)
+
+
+func _refresh_persona_badge() -> void:
+	if persona_badge == null:
+		return
+	if active_persona_name.is_empty():
+		persona_badge.text = "Controlling: —"
+		return
+	var line := "Controlling: %s" % active_persona_name
+	var you := controlled_player()
+	if you != null and you.seated:
+		line += " — at node-1"
+	elif seated_peer_id != 0:
+		var seater := _player_by_peer(seated_peer_id)
+		if seater != null:
+			var who := str(seater.persona_name)
+			if who.is_empty():
+				who = Player.display_name_for_peer(seater.peer_id)
+			line += "  ·  %s at node-1" % who
+	persona_badge.text = line
+
+
+func _show_persona_landing() -> void:
+	persona_layer.visible = true
+	_refresh_persona_list()
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+
+
+func _hide_persona_landing() -> void:
+	if active_persona_name.is_empty():
+		return
+	persona_layer.visible = false
+	if not _local_is_seated() and not OS.has_feature("headless"):
+		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+
+
+func _on_generate_persona(raw: String) -> void:
+	var name := raw.strip_edges()
+	if name.is_empty():
+		return
+	_ensure_persona(name)
+	_select_persona(name)
+	if _persona_name_edit:
+		_persona_name_edit.text = ""
+
+
+func _ensure_persona(name: String) -> void:
+	if not _persona_named(name).is_empty():
+		return
+	var slug := _persona_slug(name)
+	var rec := {
+		"name": name,
+		"public_key": "mldsa87:paper-%s" % slug,
+		"private_key": "paper-%s-sk" % slug,
+		"paper_id": "paper-%s" % slug,
+	}
+	personas.append(rec)
+	_spawn_persona_paper(rec)
+	_spawn_persona_public_slip(rec)
+	_bind_or_spawn_avatar(rec, personas.size() - 1)
+	_rebuild_persona_edge()
+	_refresh_persona_list()
+
+
+func _select_persona(name: String) -> void:
+	if _persona_named(name).is_empty():
+		return
+	active_persona_name = name
+	_apply_control()
+	_refresh_persona_badge()
+	_rebuild_persona_edge()
+	_refresh_persona_list()
+	_sync_console_visibility()
+
+
+func _apply_control() -> void:
+	for child in players_root.get_children():
+		if child is Player:
+			var on := str(child.persona_name) == active_persona_name and not active_persona_name.is_empty()
+			child.set_controlled(on)
+			child._refresh_nametag()
+
+
+func _bind_or_spawn_avatar(rec: Dictionary, index: int) -> void:
+	var name := str(rec.get("name", ""))
+	if _player_for_persona(name) != null:
+		return
+	if index == 0:
+		var host_body := local_player()
+		if host_body:
+			_apply_persona_to_player(host_body, rec, index)
+		return
+	var id := LOCAL_AVATAR_BASE + index
+	if players_root.has_node(str(id)):
+		_apply_persona_to_player(_player_by_peer(id), rec, index)
+		return
+	var p: CharacterBody3D = PLAYER_SCENE.instantiate()
+	p.name = str(id)
+	p.position = Vector3(-3.4, 0.05, -2.15)
+	players_root.add_child(p, true)
+	_apply_persona_to_player(p as Player, rec, index)
+	if multiplayer.is_server():
+		spawn_local_avatar.rpc(id, p.position, name, index)
+
+
+@rpc("authority", "reliable", "call_remote")
+func spawn_local_avatar(id: int, pos: Vector3, persona: String, color_idx: int) -> void:
+	if players_root.has_node(str(id)):
+		return
+	var p: CharacterBody3D = PLAYER_SCENE.instantiate()
+	p.name = str(id)
+	p.position = pos
+	players_root.add_child(p, true)
+	var rec := _persona_named(persona)
+	if rec.is_empty():
+		rec = {"name": persona}
+	_apply_persona_to_player(p as Player, rec, color_idx)
+
+
+func _apply_persona_to_player(p: Player, rec: Dictionary, index: int) -> void:
+	if p == null:
+		return
+	p.persona_name = str(rec.get("name", ""))
+	p.body_color = Player.color_for_peer(index + 1)
+	p._apply_color()
+	p._refresh_nametag()
+
+
+func _persona_named(name: String) -> Dictionary:
+	for rec_any in personas:
+		var rec: Dictionary = rec_any
+		if str(rec.get("name", "")) == name:
+			return rec
+	return {}
+
+
+func _persona_slug(name: String) -> String:
+	var s := name.strip_edges().to_lower()
+	var out := ""
+	for i in s.length():
+		var ch := s.substr(i, 1)
+		var code := ch.unicode_at(0)
+		var ok := (code >= 97 and code <= 122) or (code >= 48 and code <= 57)
+		if ok:
+			out += ch
+		elif not out.is_empty() and not out.ends_with("-"):
+			out += "-"
+	if out.is_empty():
+		return "persona"
+	return out.trim_suffix("-")
+
+
+func _spawn_persona_paper(rec: Dictionary) -> void:
+	if _paper_parent == null:
+		return
+	var doc_id := str(rec.get("paper_id", ""))
+	if documents.has(doc_id):
+		return
+	var i := documents.size()
+	var pos := Vector3(-3.45 + float(i) * 0.38, 0.62, -4.05)
+	var tint := Color(0.93, 0.91, 0.82).darkened(0.04 * float(i % 3))
+	_spawn_document(_paper_parent, doc_id, pos, tint, {
+		"holder_name": str(rec.get("name", "")),
+		"public_key": str(rec.get("public_key", "")),
+		"private_key": str(rec.get("private_key", "")),
+		"kind": "keys",
+	})
+
+
+func _spawn_persona_public_slip(rec: Dictionary) -> void:
+	if _paper_parent == null:
+		return
+	var doc_id := "%s-pub" % str(rec.get("paper_id", ""))
+	if documents.has(doc_id):
+		return
+	var i := documents.size()
+	var pos := Vector3(-3.45 + float(i) * 0.38, 0.62, -3.62)
+	var tint := Color(0.78, 0.86, 0.92)
+	_spawn_document(_paper_parent, doc_id, pos, tint, {
+		"holder_name": str(rec.get("name", "")),
+		"public_key": str(rec.get("public_key", "")),
+		"private_key": "",
+		"kind": "public_slip",
+	})
+
+
+func credentials_from_local_inventory() -> Dictionary:
+	var papers := papers_from_local_inventory()
+	if papers.is_empty():
+		return {}
+	var rec: Dictionary = papers[papers.size() - 1]
+	return {
+		"paper_id": str(rec.get("paper_id", "")),
+		"holder_name": str(rec.get("holder_name", "")),
+		"public_key": str(rec.get("public_key", "")),
+		"private_key": str(rec.get("private_key", "")),
+		"kind": str(rec.get("kind", "keys")),
+		"source": "inventory",
+	}
+
+
+func papers_from_local_inventory() -> Array:
+	return _papers_from_player(controlled_player())
+
+
+func _papers_from_player(p: Player) -> Array:
+	var out: Array = []
+	if p == null:
+		return out
+	for i in range(p.inventory.size()):
 		var doc_id := str(p.inventory[i])
 		var doc: Variant = documents.get(doc_id)
 		if typeof(doc) != TYPE_DICTIONARY:
 			continue
 		var rec: Dictionary = doc
-		var pk := str(rec.get("public_key", ""))
-		if pk.is_empty():
+		if str(rec.get("public_key", "")).is_empty():
 			continue
-		return {
+		out.append({
 			"paper_id": doc_id,
 			"holder_name": str(rec.get("holder_name", doc_id)),
-			"public_key": pk,
+			"public_key": str(rec.get("public_key", "")),
 			"private_key": str(rec.get("private_key", "")),
-		}
-	return {}
+			"kind": str(rec.get("kind", "keys")),
+		})
+	return out
 
 
 func _paper_label(doc_id: String) -> String:
 	var doc: Variant = documents.get(doc_id)
 	if typeof(doc) == TYPE_DICTIONARY:
 		var who := str(doc.get("holder_name", ""))
+		if str(doc.get("kind", "")) == "public_slip":
+			return "%s public key" % who if not who.is_empty() else "public key"
 		if not who.is_empty():
 			return "%s keys" % who
 	return doc_id
@@ -494,7 +1057,11 @@ func _spawn_document(parent: Node, doc_id: String, pos: Vector3, color: Color, c
 	mesh.name = doc_id
 	var tag := Label3D.new()
 	var who := str(creds.get("holder_name", "ISSUANCE"))
-	tag.text = "%s\npaper keys" % who
+	var kind := str(creds.get("kind", "keys"))
+	if kind == "public_slip":
+		tag.text = "%s\npublic key\n(hand this)" % who
+	else:
+		tag.text = "%s\npaper keys" % who
 	tag.position = Vector3(0, 0.12, 0)
 	tag.font_size = 14
 	tag.pixel_size = 0.004
@@ -508,4 +1075,5 @@ func _spawn_document(parent: Node, doc_id: String, pos: Vector3, color: Color, c
 		"holder_name": str(creds.get("holder_name", "")),
 		"public_key": str(creds.get("public_key", "")),
 		"private_key": str(creds.get("private_key", "")),
+		"kind": str(creds.get("kind", "keys")),
 	}
