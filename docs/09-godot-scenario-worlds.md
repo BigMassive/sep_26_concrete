@@ -108,7 +108,7 @@ Not in stages 1–8. Keep a comment in code: world transform ≠ belief. OTP may
 | **1** | 3D room, desk, laptop prop, one body, **ENet (or Godot MP) listen-server**, second process can join and see two bodies | `godot-up` walks; second `godot --headless` joins and a capsule appears |
 | **2** | Proximity interact, SubViewport console = current 2D UI, Esc unsits, mouse capture | Human can refresh OTP from the laptop |
 | **3** | Issuer tray + document pickup + inventory | Tray remains; **this beat:** pickup does not key. King-making is W0 ([11](11-helen-alice-cot-beats.md)) |
-| **4** | Headless peer playbook: join, pick up (inventory, not keyed), sit; plaque/Eve steps fail-fast | `create_plaque` / `eve_deny` → `superseded_step`. Helen→Alice playbook later |
+| **4** | Headless peer playbook: join, pick up (inventory, not keyed), sit; plaque/Eve steps fail-fast | `create_plaque` / `eve_deny` → `superseded_step`. Helen→Alice console beat is the host scenario `./scripts/godot-scenario.sh helen-alice`, not this peer |
 | **5** | Blank + full snapshot save/load including all personas | Round-trip a King-bound body after lab restart |
 | **6** | Outer lobby UI | Pick blank vs named save |
 | **7** | Inner lobby: spawn body without leaving the room | Second colour walks; still unkeyed until paper |

@@ -99,6 +99,8 @@ Alice can run this because W1 granted her a **covering cap** pointing at W2 — 
 
 Post-login surface: list runnable workspaces, start processes, **discovery**, **Exit session**. “Home screen on any node” is a cap; this beat has one laptop.
 
+**Exit to menu** leaves the open workspace or Discovery and returns here. Before genesis, the same control returns from the W0 graph to the empty-CoT **Overview**. It does not log out, drop vault use, or stand the body up. **Exit session** is still the logout. **Esc** still only unsits.
+
 **Issuance tray** in the 3D room is **set dressing** this beat. Real path is workspaces (keys typed/imported). 0009 paper-pickup-as-keying is **superseded** for this story (do not leave two ways to become King).
 
 ## Discovery
@@ -174,7 +176,7 @@ Code in this order; the play above is the demo once they exist:
 5. Identity process; stub αβω; Exit session.  
 6. Launcher + discovery + W2 auto-link D5.
 
-`mix test` must still pass. Headless playbook remains option C when the console can drive these workspaces.
+`mix test` must still pass. The host scenario `./scripts/godot-scenario.sh helen-alice` drives this console beat in one process. The joining playbook remains option C and is a separate path.
 
 ## Revises (when coding, expect ADR follow-ups)
 

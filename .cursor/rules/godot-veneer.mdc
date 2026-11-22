@@ -9,7 +9,8 @@ alwaysApply: false
 Godot is the thin UI (ADR 0004, ADR 0009). Durable name → head stays on IOTA Identity and IPFS. Scripts talk to the OTP HTTP API on localhost.
 
 - Change scenes and scripts through the Godot AI editor connection when it is up. The always-on Godot AI rule has the connection steps.
-- Leave `godot/addons/godot_ai/` as the vendored plugin. A veneer change belongs in `godot/scripts/`, `godot/scenes/`, or `godot/playbooks/`.
+- Leave `godot/addons/godot_ai/` as the vendored plugin. A veneer change belongs in `godot/scripts/`, `godot/scenes/`, `godot/playbooks/`, or `godot/scenarios/`.
+- A repeatable console beat is a host scenario (`godot/scenarios/*.json`, `./scripts/godot-scenario.sh`). The joining playbook stays the option-C peer. Do not mint a capability from either.
 - A playbook or world script reads and writes through OTP. It does not mint a capability or store a content head in the scene.
 
 ```gdscript

@@ -49,6 +49,7 @@ var _usernames: Array = []
 var _shown_pin: String = ""
 var _screen: String = ""
 var _discovery: DiscoveryView = null
+var _w0_tabs: TabContainer = null
 var _graph_nodes: Dictionary = {}
 var _graph_kinds: Dictionary = {}
 var _commit_btn: Button = null
@@ -79,6 +80,24 @@ func playbook_create() -> void:
 
 func playbook_eve_deny() -> void:
 	status_label.text = "Eve-deny playbook superseded — Alice has no bootstrap cap."
+
+
+## Leave a workspace or discovery view for the console menu.
+## Pre-genesis that menu is the empty-CoT Overview. After login it is Home / launcher.
+## Does not log out and does not stand the body up.
+func _return_to_menu() -> void:
+	if _screen == "w0_tabs" and _w0_tabs != null and is_instance_valid(_w0_tabs):
+		_w0_tabs.current_tab = 0
+		status_label.text = "Empty Circle of Trust."
+		return
+	if not bool(_lab.get("genesis_complete", false)):
+		_open_w0()
+		return
+	if session_principal_id.is_empty() and not bool(_session.get("logged_in", false)):
+		_show_login()
+		return
+	status_label.text = "Menu."
+	_http_get("/v1/workspaces?principal_id=%s" % _actor().uri_encode(), "workspaces")
 
 
 func _refresh() -> void:
@@ -301,6 +320,7 @@ func _clear_screen() -> void:
 	_commit_btn = null
 	_populate_btn = null
 	_discovery = null
+	_w0_tabs = null
 	_screen = ""
 	_stop_busy_timer()
 	_busy = false
@@ -459,7 +479,7 @@ func _show_workspace(ws: Dictionary) -> void:
 	box.add_child(_heading(title))
 	box.add_child(_paper_status_label())
 	var row := HBoxContainer.new()
-	row.add_child(_btn("Back", _refresh))
+	row.add_child(_btn("Exit to menu", _return_to_menu))
 	row.add_child(_btn("Try save layout (expect deny — cannot mint verbs)", func() -> void:
 		_http_post("/v1/workspaces/save", {
 			"principal_id": _actor(),
@@ -509,6 +529,11 @@ func _show_w0_tabs(_ws: Dictionary, layout: Dictionary) -> void:
 	tabs.add_child(genesis)
 	tabs.set_tab_title(1, "W0 — first user")
 	tabs.current_tab = 0
+	_w0_tabs = tabs
+	var leave := HBoxContainer.new()
+	leave.add_theme_constant_override("separation", 8)
+	leave.add_child(_btn("Exit to menu", _return_to_menu))
+	genesis.add_child(leave)
 	_build_graph(genesis, layout)
 
 
@@ -1087,7 +1112,7 @@ func _show_discovery(graph: Dictionary) -> void:
 	var box := _vbox()
 	box.add_child(_heading("Discovery"))
 	box.add_child(_note("Walk from D5[user]. Info filtered by read list. Data = markers (no D4 bytes)."))
-	box.add_child(_btn("Back", _refresh))
+	box.add_child(_btn("Exit to menu", _return_to_menu))
 	_discovery = DiscoveryView.new()
 	_discovery.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_discovery.custom_minimum_size = Vector2(0, 360)

@@ -107,7 +107,7 @@ echo "Stopping Godot and OTP for ${ROOT_REAL}…"
 stop_godot
 stop_otp
 wait_gone
-rm -f "${RUN}/node.pid" "${RUN}/godot.pid"
+rm -f "${RUN}/node.pid" "${RUN}/godot.pid" "${RUN}/scenario.pid"
 
 "${ROOT}/scripts/lab-down.sh" --wipe
 assert_clear

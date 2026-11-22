@@ -33,6 +33,15 @@ Stop:
 
 The lower-level commands are still `lab-up.sh`, `identity-publish.sh`, `node-up.sh`, and `lab-down.sh`.
 
+The scripted Helen → Alice console beat runs after a clean `session-up`, and it needs the Godot listen port free, so do not pass `--godot` on that same up:
+
+```bash
+./scripts/session-up.sh
+./scripts/godot-scenario.sh helen-alice
+```
+
+Named setups live in `godot/scenarios/`. The windowed form is `GODOT_SCENARIO_WINDOW=1 ./scripts/godot-scenario.sh helen-alice`. Detail is in `godot/README.md` under "Host scenarios".
+
 ## Status
 
 ```bash

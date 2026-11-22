@@ -47,14 +47,14 @@ CSG boxes, a capsule `CharacterBody3D`, a laptop-sized box, a paper-sized box, u
 
 ## Playbook JSON (suggested)
 
-Keep it boring. Pickup may still be a step (inventory, **not** `p.keyed`). Plaque/Eve steps are **superseded** and must fail-fast (`superseded_step:create_plaque`), not hang. A Helen→Alice playbook (W0–W2 console HTTP) is later. Example leftover: `{ "name": "first-login", "steps": [ "join", "pickup_nearest_document", "sit_laptop", "wait_console_ready", "create_plaque" ] }`. Stdout: one JSON object. Do not scrape the 3D viewport.
+Keep it boring. Pickup may still be a step (inventory, **not** `p.keyed`). Plaque/Eve steps are **superseded** and must fail-fast (`superseded_step:create_plaque`), not hang. Helen → Alice through Alice login is the host scenario `helen-alice`, not this peer. Example leftover: `{ "name": "first-login", "steps": [ "join", "pickup_nearest_document", "sit_laptop", "wait_console_ready", "create_plaque" ] }`. Stdout: one JSON object. Do not scrape the 3D viewport.
 
 ## Tests / verification
 
 - `mix test` must still pass (OTP). Do not break Elixir.
 - Manual: two terminals, host + headless join, two capsules.
 - Manual: sit, see OTP health, Esc, walk. Paper pickup is set dressing (does not onboard).
-- Playbook: `create_plaque` / `eve_deny` fail-fast; headless peer must not curl mutate. `godot-playbook.sh first-login` is a known red path until a W0–W2 playbook exists.
+- Playbook: `create_plaque` / `eve_deny` fail-fast; headless peer must not curl mutate. `godot-playbook.sh first-login` is a known red path. The Helen → Alice console beat is the host scenario `./scripts/godot-scenario.sh helen-alice`, not that peer.
 - If Godot is missing on the agent machine, say so; do not fake a pass.
 
 ## Explicitly do not
@@ -67,7 +67,7 @@ Keep it boring. Pickup may still be a step (inventory, **not** `p.keyed`). Plaqu
 - [ ] Second process can join and is visible.
 - [ ] Laptop console = existing OTP UI; Esc unsits.
 - [ ] Issuance tray is set dressing; keying is W0/login (see [11](11-helen-alice-cot-beats.md)).
-- [ ] Headless playbook: `create_plaque` / `eve_deny` fail-fast (`superseded_step`). Helen→Alice playbook is later; `godot-playbook.sh first-login` is a known red path until then.
+- [ ] Headless playbook: `create_plaque` / `eve_deny` fail-fast (`superseded_step`). `godot-playbook.sh first-login` is a known red path. Helen → Alice is `./scripts/godot-scenario.sh helen-alice`.
 - [ ] `godot/README.md` updated; 2D-only path explained if kept as a debug scene.
 - [ ] No secrets committed; `lab/data/` stays gitignored.
 

@@ -1,0 +1,14 @@
+{
+  "name": "helen-alice",
+  "pin": "13579",
+  "steps": [
+    "helen_pickup_keys",
+    "helen_sit",
+    "helen_genesis",
+    "alice_give_slip",
+    "helen_w1",
+    "helen_logout",
+    "alice_pickup_keys",
+    "alice_login"
+  ]
+}

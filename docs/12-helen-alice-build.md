@@ -27,7 +27,7 @@ Implement the **Helen → Alice** play in [11](11-helen-alice-cot-beats.md) as f
 - **Wendy-links** between **any** info or data DIDs; data mutate = **same DID, new CID**.
 - **G** + **D1–D5**. D4 = pubkey↔PIN on IPFS, **tight read cap** (Helen/bootstrap). Discovery: data = **markers only**.
 - **Vaults:** Elixir `GenServer` under node dynamic supervisor, **per user**, volatile. Comments: `lab stand-in — rewrite as seL4 later.` **No NIFs.** First Alice login starts **Alice’s** vault and imports paper private key. **Use-vault** only that principal. Exit session drops **that** user’s use (not Helen’s key left loaded for Alice).
-- **Esc** = unsit, session remains. **Exit session** = logout. **Power off** ⇒ OTP **refuses** (and/or subtree stops).
+- **Esc** = unsit, session remains. **Exit to menu** = leave the open workspace or Discovery for the console menu (Overview before genesis, Home / launcher after login); session stays logged in. **Exit session** = logout. **Power off** ⇒ OTP **refuses** (and/or subtree stops).
 - **Identity process:** username+PIN; stub αβω that **pass** Alice’s caps. Document: **not** signed sessions.
 - **Discovery:** force-directed graph from OTP walk starting **D5[user]**; info filtered by read list; Godot does not scrape IPFS.
 - **3D tray / identity desk:** set dressing for paper; sign **Collect identities here**. Pickup does not onboard King. Each persona is a **separate coloured dummy** (capsule/sphere/cylinder, KidsCanCode-style; first-person hides the head). **G** prefers the giver’s **public-key slip**. Console is only the **seated** body. HUD **at node-1** follows the seater. W1 **Populate** copies the admittee (Alice / new user), never the seater.
@@ -50,7 +50,7 @@ Implement the **Helen → Alice** play in [11](11-helen-alice-cot-beats.md) as f
 - Manual: empty data dir; W0 once; second W0 fails; Helen W1 Alice; Exit; Alice login; discovery; W2 link visible.
 - Unkeyed / wrong PIN / no covering cap / unread info omitted.
 - If Godot missing, say so; do not fake a pass.
-- Headless playbook: optional if W0–W2 are console-drivable; still option C, not curl mutate as the user.
+- Host scenario for the Helen → Alice console beat: `./scripts/session-up.sh` then `./scripts/godot-scenario.sh helen-alice` (`godot/scenarios/helen-alice.json`). It presses the console in one process. The joining playbook (`./scripts/godot-playbook.sh`) stays option C and is still the known red path. Curl mutate is still not the user.
 
 ## Art / UX bar
 

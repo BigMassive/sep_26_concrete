@@ -7,6 +7,8 @@ alwaysApply: true
 
 Until the owner says otherwise, do not preserve run-to-run lab state. The procedure is in `lab/README.md` under "Test sessions — start clean, then wipe".
 
-Before each test: `./scripts/session-up.sh` (add `--godot` to open the veneer). That wipes `lab/data/`, starts IPFS and IOTA, publishes a new Identity package, and leaves OTP running in the background. A previous Circle of Trust, chain id, checkpoint, or identity package id is not something to keep.
+Before each test: `./scripts/session-up.sh` (add `--godot` to open the veneer for a person to click). That wipes `lab/data/`, starts IPFS and IOTA, publishes a new Identity package, and leaves OTP running in the background. A previous Circle of Trust, chain id, checkpoint, or identity package id is not something to keep.
+
+The scripted Helen → Alice console beat is `./scripts/godot-scenario.sh helen-alice` after that `session-up`, with port 24567 free. Do not pass `--godot` on the same run. Other beats are further JSON files in `godot/scenarios/`. The steps are in the always-on Godot AI rule.
 
 After each test: `./scripts/session-down.sh`. That stops Godot and the OTP `mix`/`beam` process, wipes again, and checks the result. Leave no `sep26_lab_*` containers, Godot, or `mix run`, and leave ports 4000, 5001, 8080, 9000, 9123, and 24567 clear.

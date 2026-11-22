@@ -7,6 +7,7 @@ extends Node3D
 const SESSION_PORT := 24567
 const PLAYER_SCENE := preload("res://scenes/player.tscn")
 const CONSOLE_SCENE := preload("res://scenes/main.tscn")
+const CONCRETE_MARK := preload("res://images/concrete_icon_200.png")
 const SIT_RANGE := 2.4
 const PICKUP_RANGE := 1.8
 const GIVE_RANGE := 2.2
@@ -31,6 +32,8 @@ const LOCAL_AVATAR_BASE := 1000
 
 var join_address: String = ""
 var playbook_path: String = ""
+var scenario_path: String = ""
+var scenario_stay: bool = false
 var console_only: bool = false
 var seated_peer_id: int = 0
 var console: NodeConsole = null
@@ -58,14 +61,19 @@ func _ready() -> void:
 	fullscreen_button.pressed.connect(_toggle_fullscreen)
 	_sync_fullscreen_button()
 	_setup_multiplayer()
-	if not playbook_path.is_empty() or OS.has_feature("headless"):
+	if not playbook_path.is_empty() or not scenario_path.is_empty() or OS.has_feature("headless"):
 		_ensure_persona("Helen")
 		_ensure_persona("Alice")
 		_select_persona("Helen")
 		_hide_persona_landing()
 	else:
 		_show_persona_landing()
-	if not playbook_path.is_empty():
+	if not scenario_path.is_empty():
+		var scenario := preload("res://scripts/scenario_runner.gd").new()
+		scenario.world = self
+		scenario.stay = scenario_stay
+		add_child(scenario)
+	elif not playbook_path.is_empty():
 		var runner := preload("res://scripts/playbook_runner.gd").new()
 		runner.world = self
 		add_child(runner)
@@ -87,6 +95,15 @@ func _parse_args() -> void:
 			i += 2
 		elif a.begins_with("--playbook="):
 			playbook_path = a.get_slice("=", 1)
+			i += 1
+		elif a == "--scenario" and i + 1 < args.size():
+			scenario_path = args[i + 1]
+			i += 2
+		elif a.begins_with("--scenario="):
+			scenario_path = a.get_slice("=", 1)
+			i += 1
+		elif a == "--stay":
+			scenario_stay = true
 			i += 1
 		elif a == "--console-only":
 			console_only = true
@@ -661,7 +678,7 @@ func _enter_console() -> void:
 	_fit_console_viewport()
 	if console:
 		console.bind_actor("", false)
-	hint_label.text = "Esc · stand up (session remains)  ·  Exit session on the console to logout"
+	hint_label.text = "Esc · stand up (session remains)  ·  Exit to menu leaves the workspace  ·  Exit session logs out"
 
 
 func _leave_console() -> void:
@@ -850,6 +867,15 @@ func _build_persona_landing() -> void:
 	var inner := VBoxContainer.new()
 	inner.add_theme_constant_override("separation", 10)
 	panel.add_child(inner)
+	var mark_row := CenterContainer.new()
+	inner.add_child(mark_row)
+	var mark := TextureRect.new()
+	mark.custom_minimum_size = Vector2(72, 72)
+	mark.texture = CONCRETE_MARK
+	mark.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	mark.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	mark.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	mark_row.add_child(mark)
 	var title := Label.new()
 	title.text = "Personas"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER

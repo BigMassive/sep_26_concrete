@@ -2,17 +2,14 @@
 
 Lab **node runtime** for `sep_26_concrete` — not Phoenix, not Godot. See [ADR 0003](../docs/decisions/0003-runtime-beam.md), [ADR 0005](../docs/decisions/0005-bootstrap-capability.md). Name → head authority is **IOTA Identity** ([ADR 0007](../docs/decisions/0007-iota-did-head-authority.md)); this process executes and caches.
 
-## Beat 1 — bootstrap
-
-On first start (empty `lab/data/node/`), creates **node-1**, onboards **King** via the user-identity sidecar (ADR 0008: index-0 ML-DSA-87 **public key** is the principal id), and assigns the **bootstrap/do-anything** capability to that key.
+## Start
 
 ```bash
-# Optional: lab IPFS/IOTA (needed from beat 2+)
-./scripts/lab-up.sh
-
-./scripts/node-up.sh          # terminal A — http://127.0.0.1:4000
-./scripts/beat1-smoke.sh      # terminal B
+./scripts/session-up.sh       # wipe, IPFS + IOTA, identity publish, detached OTP
+./scripts/session-down.sh
 ```
+
+Node-up creates **node-1** and does not mint King. The first user is W0 genesis on the console, or `./scripts/godot-scenario.sh helen-alice`. That user’s index-0 ML-DSA-87 public key is the principal, and W0 assigns the bootstrap/**any** capability. `./scripts/beat1-smoke.sh` is the older bootstrap check, not the way to meet King.
 
 ## Beats 2+ — info objects (DID + IPFS)
 
@@ -20,7 +17,7 @@ Requires lab IPFS (`./scripts/lab-up.sh`). When the Identity package is configur
 
 ```bash
 ./scripts/beat2-smoke.sh
-./scripts/godot-up.sh      # Godot veneer
+./scripts/godot-up.sh      # window only; prefer session-up, then godot-up or godot-scenario
 ```
 
 ## HTTP

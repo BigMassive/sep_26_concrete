@@ -45,7 +45,8 @@ Single place for terms used in this prototype. Prefer these spellings in docs an
 | **Node console** | In-world screen on a node prop (e.g. laptop). Player mouse/keyboard drive that nested UI; still OTP HTTP only. |
 | **Outer / inner lobby** | Outer: pick / load / save a **scenario world**. Inner: already in that world; spawn or possess another body. Not CoT membership ([ADR 0009](decisions/0009-godot-scenario-worlds.md)). |
 | **Issuance document** | External paper/bank (readable keys). 3D tray is set dressing in [11](11-helen-alice-cot-beats.md); keying is genesis/import **workspaces**, not pickup-as-King. |
-| **Playbook bot** | Headless Godot **peer** in the session (option C). Collects issuance document like a human. Not curl-as-user; not a same-process intent script. |
+| **Playbook bot** | Headless Godot **peer** in the session (option C). Collects issuance document like a human. Not curl-as-user; not a same-process intent script. `./scripts/godot-playbook.sh` is still a known red path. |
+| **Host scenario** | One Godot process that switches personas and presses the node console. JSON under `godot/scenarios/`, run by `./scripts/godot-scenario.sh`. Not a **playbook bot**, and not a **scenario world**. |
 | **Lab supervisor** | Harness: seed, god-view including **powered / boot_stage / zeroised**. Not cap/commit authority ([ADR 0004](decisions/0004-world-state-supervisor.md), [11](11-helen-alice-cot-beats.md)). |
 | **Node supervisor** | Working-node task tree (vaults, identity process). Not the lab supervisor. |
 | **God-view (position)** | Objective / actual position of a node in the modelled or physical world. Lab: often supervisor-published. Not solely node self-report. |
