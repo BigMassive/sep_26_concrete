@@ -1,0 +1,19 @@
+---
+description: Prototype boundaries — ground truth, vocabulary, ADRs, and out-of-scope work
+alwaysApply: true
+---
+
+# Prototype boundaries
+
+`sep_26_concrete` is a disposable working mock. Build the vertical slice. Leave programme paper on the BigMassive/CONCRETE site.
+
+- **Ground truth.** Durable name → head is an IOTA Identity DID document `ContentHead` pointing at an IPFS CID (`docs/00-intent.md`, ADR 0007). OTP executes, caches, and checks capabilities. Godot calls OTP HTTP and stores no durable head.
+- **Runtime.** Elixir/OTP on the BEAM (ADR 0003). The lab harness is Docker Compose with project-private IPFS and local IOTA (ADR 0001). Required tools stay open source.
+- **Words.** Use spellings in `docs/02-vocabulary.md`. A stable name is a **DID**. The first user on a fresh node holds the **bootstrap** capability. A **principal** is the index-0 ML-DSA-87 public key.
+- **Decisions.** Accepted ADRs win. A new architectural choice is a new file under `docs/decisions/`, using the template in that directory's README.
+- **Scope.** Ship only what `docs/04-vertical-slice.md` and `docs/05-concept-backlog.md` mark for this slice. `docs/06-out-of-scope.md` lists work that stays out (four containers per node, RINA on the first path, production key ceremonies, stock IPFS/IOTA as the product fabric, IINL naming).
+
+```text
+# A mutate names a DID, writes bytes to IPFS, and moves ContentHead on the Identity doc.
+# OTP allows it only when the principal's capability covers the action.
+```

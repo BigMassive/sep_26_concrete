@@ -9,6 +9,9 @@ services:
   ipfs:
     image: ipfs/kubo:v0.34.1
     container_name: sep26_lab_ipfs
+    # Healthcheck and daemon share this user. Root-owned repo.lock / datastore
+    # files appear when `ipfs id` runs as root, and the daemon then cannot lock.
+    user: "1000:100"
     volumes:
       - ./data/ipfs:/data/ipfs
       - ./data/swarm.key:/swarm.key:ro

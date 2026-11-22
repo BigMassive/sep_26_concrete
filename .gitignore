@@ -15,6 +15,10 @@ node_modules/
 
 # Lab harness local state (swarm key, IOTA genesis, IPFS repo, OTP state)
 lab/data/
+# Identity Move sources, kept across wipes. Publish output still lives in lab/data.
+lab/cache/
+# Detached session pid files and logs (node-up, godot-up).
+lab/run/
 lab/.venv/
 __pycache__/
 *.pyc

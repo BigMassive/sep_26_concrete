@@ -21,23 +21,19 @@ Stop:
 
 **Until the owner says otherwise, runs are not coherent with each other.** Do not keep a Circle of Trust, chain id, checkpoint, identity package id, or OTP node between tests.
 
-Before each test:
+```bash
+./scripts/session-up.sh            # wipe, lab, identity publish, OTP in the background
+./scripts/session-up.sh --godot    # same, and open the windowed veneer
+./scripts/session-down.sh          # stop Godot and OTP, wipe, check the ports
+```
 
-1. Stop anything still running from a previous run (Godot, the OTP `mix`/`beam` process, lab containers).
-2. `./scripts/lab-down.sh --wipe` so `lab/data/` is gone (IPFS swarm, IOTA genesis, identity package, node, vault).
-3. `./scripts/lab-up.sh`
-4. `./scripts/identity-publish.sh` — a new IOTA genesis needs a new package.
-5. `./scripts/node-up.sh` on that empty data dir.
-6. Then the test (smoke script and/or Godot).
+`session-up` stops anything still running, deletes `lab/data/` (IPFS swarm, IOTA genesis, identity package, node, vault), brings the harness up, publishes the Identity package for that genesis, and leaves OTP detached. Logs and pids are in `lab/run/`. The Identity Move sources stay in `lab/cache/` so the next session does not clone them again.
 
-After each test:
+`session-down` confirms nothing is left: no `sep26_lab_*` containers, no Godot for this repo, no `mix run`, `lab/data/` gone, and ports **4000**, **5001**, **8080**, **9000**, **9123**, and **24567** clear. Root-owned container files are removed in Docker when the host user cannot delete them.
 
-1. Stop Godot.
-2. Stop the OTP process started by `./scripts/node-up.sh`.
-3. `./scripts/lab-down.sh --wipe`
-4. Confirm nothing is left: no `sep26_lab_*` containers, no Godot, no `mix run`, and ports **4000**, **5001**, **8080**, **9000**, **9123**, and **24567** are clear.
+The lower-level commands are still `lab-up.sh`, `identity-publish.sh`, `node-up.sh`, and `lab-down.sh`.
 
-Status:
+## Status
 
 ```bash
 ./scripts/lab-status.sh
@@ -58,7 +54,7 @@ Status:
 - **IOTA:** `iota-localnet` with genesis under `lab/data/iota` — not mainnet/testnet. RPC/faucet bound for this compose project only; host publish is `127.0.0.1`.
 - Compose project name: `sep26_concrete_lab`.
 
-`lab/data/` is gitignored.
+`lab/data/` is gitignored. `lab/cache/` (Identity Move sources) and `lab/run/` (session pids and logs) are gitignored too.
 
 ## OTP / Godot
 

@@ -1,0 +1,21 @@
+---
+description: Godot veneer — scenes and scripts call OTP; leave the Godot AI addon untouched
+globs: godot/**/*.gd,godot/**/*.tscn
+alwaysApply: false
+---
+
+# Godot veneer
+
+Godot is the thin UI (ADR 0004, ADR 0009). Durable name → head stays on IOTA Identity and IPFS. Scripts talk to the OTP HTTP API on localhost.
+
+- Change scenes and scripts through the Godot AI editor connection when it is up. The always-on Godot AI rule has the connection steps.
+- Leave `godot/addons/godot_ai/` as the vendored plugin. A veneer change belongs in `godot/scripts/`, `godot/scenes/`, or `godot/playbooks/`.
+- A playbook or world script reads and writes through OTP. It does not mint a capability or store a content head in the scene.
+
+```gdscript
+const BASE := "http://127.0.0.1:4000"
+
+func _http_post(path: String, data: Dictionary) -> void:
+	var headers := PackedStringArray(["Content-Type: application/json"])
+	http.request(BASE + path, headers, HTTPClient.METHOD_POST, JSON.stringify(data))
+```

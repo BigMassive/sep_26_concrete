@@ -34,6 +34,19 @@ This repository starts **docs-first**: architecture, residues from prior work, v
 | [docs/roadmap.md](docs/roadmap.md) | Phased plan |
 | [docs/decisions/](docs/decisions/) | Architecture decision records (ADRs) |
 
+## Cursor rules
+
+Project rules live in [`.cursor/rules/`](.cursor/rules/). Always-on rules are sent every chat. The others apply when matching files are in play. Each rule points at the doc that holds the detail.
+
+| Rule | When it applies | What it keeps in force |
+|------|-----------------|------------------------|
+| [lab-test-sessions.mdc](.cursor/rules/lab-test-sessions.mdc) | Every chat | Wipe lab state before and after a test ([lab/README.md](lab/README.md)) |
+| [godot-ai.mdc](.cursor/rules/godot-ai.mdc) | Every chat | Use the Godot AI editor connection when changing the veneer ([godot/README.md](godot/README.md)) |
+| [prototype-boundaries.mdc](.cursor/rules/prototype-boundaries.mdc) | Every chat | Ground truth, vocabulary, ADRs, and [out of scope](docs/06-out-of-scope.md) |
+| [runtime-elixir.mdc](.cursor/rules/runtime-elixir.mdc) | `runtime/**/*.ex`, `runtime/**/*.exs` | `mix format`, focused tests, capability checks on mutates |
+| [godot-veneer.mdc](.cursor/rules/godot-veneer.mdc) | `godot/**/*.gd`, `godot/**/*.tscn` | Veneer calls OTP; leave `godot/addons/godot_ai/` untouched |
+| [architecture-decisions.mdc](.cursor/rules/architecture-decisions.mdc) | `docs/decisions/**/*.md` | One ADR per file, from the [decisions README](docs/decisions/README.md) template |
+
 ## Status
 
 **Phase:** docs + lab harness (beat 0) + OTP bootstrap (beat 1). Godot UI and DID commits still pending.
@@ -50,11 +63,10 @@ Per [docs/decisions/0001-lab-toolchain.md](docs/decisions/0001-lab-toolchain.md)
 Test runs do not keep state from the previous run. Start from a wiped `lab/data/`, and shut the stack down with a wipe afterwards. The steps are in [lab/README.md](lab/README.md#test-sessions--start-clean-then-wipe).
 
 ```bash
-./scripts/lab-up.sh      # beat 0: private IPFS + IOTA
-./scripts/node-up.sh     # beat 1: OTP + bootstrap capability (King)
+./scripts/session-up.sh --godot   # wipe, IPFS + IOTA, identity publish, OTP, Godot window
 ./scripts/beat1-smoke.sh
 ./scripts/lab-status.sh
-./scripts/lab-down.sh    # add --wipe to reset local lab data
+./scripts/session-down.sh         # stop Godot and OTP, wipe, check ports
 ```
 
 

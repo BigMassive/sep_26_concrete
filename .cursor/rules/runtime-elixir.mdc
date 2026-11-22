@@ -1,0 +1,24 @@
+---
+description: Elixir runtime — format, focused tests, capability checks on mutates
+globs: runtime/**/*.ex,runtime/**/*.exs
+alwaysApply: false
+---
+
+# Elixir runtime
+
+Work from `runtime/`. The HTTP table is `runtime/README.md`. This process orchestrates IPFS and IOTA Identity; the UI stays in Godot (ADR 0003).
+
+- Format changed files with `mix format`.
+- Run the matching test file, for example `mix test test/concrete_runtime_bootstrap_test.exs`. Run `mix test` when the change crosses modules.
+- A mutating route checks a capability before it writes. On denial, respond `403` with `%{error: "capability_denied"}`, as `POST /v1/identity` does in `lib/concrete_runtime/api.ex`.
+
+```elixir
+case ConcreteRuntime.Bootstrap.authorize(principal_id, "mutate") do
+  {:ok, _, _} ->
+    # publish, then send_json(conn, 201, created)
+    :ok
+
+  {:error, :capability_denied} ->
+    send_json(conn, 403, %{error: "capability_denied"})
+end
+```

@@ -5,7 +5,8 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 IOTA_DATA="${ROOT}/lab/data/iota"
-IDENTITY_SRC="${ROOT}/lab/data/identity.rs"
+# Survives lab/data wipes. A new genesis still needs a new publish.
+IDENTITY_SRC="${ROOT}/lab/cache/identity.rs"
 PKG_OUT="${IOTA_DATA}/identity_pkg_id.txt"
 IOTA_IMG="${IOTA_IMAGE:-sep26_concrete/iota-localnet:v1.30.1}"
 IDENTITY_REF="${IDENTITY_GIT_REF:-main}"
@@ -16,13 +17,17 @@ curl -sf -X POST http://127.0.0.1:9000 \
   || { echo "IOTA RPC not up — run ./scripts/lab-up.sh first" >&2; exit 1; }
 
 if [[ ! -f "${IDENTITY_SRC}/identity_iota_core/packages/iota_identity/Move.toml" ]]; then
-  echo "Cloning identity.rs (${IDENTITY_REF}) into lab/data (gitignored)…"
-  rm -rf "${IDENTITY_SRC}"
+  echo "Cloning identity.rs (${IDENTITY_REF}) into lab/cache (kept across wipes)…"
+  mkdir -p "${ROOT}/lab/cache"
+  if [[ -d "${IDENTITY_SRC}" ]] && ! rm -rf "${IDENTITY_SRC}" 2>/dev/null; then
+    docker run --rm --entrypoint find -v "${IDENTITY_SRC}:/wipe" "${IOTA_IMG}" /wipe -mindepth 1 -delete
+    rm -rf "${IDENTITY_SRC}"
+  fi
   git clone --depth 1 --branch "${IDENTITY_REF}" \
     https://github.com/iotaledger/identity.rs.git "${IDENTITY_SRC}"
 fi
 
-echo "Publishing IotaIdentity package (needs git inside publish container for framework deps)…"
+echo "Publishing IotaIdentity package…"
 RESP_FILE=$(mktemp)
 ERR_FILE=$(mktemp)
 docker run --rm --network host --entrypoint bash \

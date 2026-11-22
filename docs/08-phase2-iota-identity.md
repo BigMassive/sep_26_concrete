@@ -26,7 +26,7 @@ Lab assumption (owner, 2026-09-10): Compose IOTA and Docker `iota client ptb` ar
 ## Lab commands
 
 ```bash
-./scripts/lab-up.sh
+./scripts/session-up.sh         # wipe, lab-up, identity-publish, detached node-up
 ./scripts/identity-publish.sh   # once per genesis (writes identity_pkg_id.txt)
 ./scripts/node-up.sh            # loads IOTA_IDENTITY_PKG_ID automatically
 ./scripts/identity-smoke.sh

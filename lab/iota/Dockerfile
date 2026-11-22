@@ -6,9 +6,11 @@ FROM ubuntu:24.04
 ARG IOTA_VERSION
 ARG TARGETARCH
 
+# git: identity-publish compiles the Move package inside this image and
+# fetches framework deps with git. Installing it here skips apt-get on each publish.
 RUN apt-get update \
   && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-    ca-certificates curl libpq5 \
+    ca-certificates curl git libpq5 \
   && rm -rf /var/lib/apt/lists/*
 
 RUN set -eux; \

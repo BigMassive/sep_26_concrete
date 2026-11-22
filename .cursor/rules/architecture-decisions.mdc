@@ -1,0 +1,24 @@
+---
+description: Architecture decision records — one file per decision, from the existing template
+globs: docs/decisions/**/*.md
+alwaysApply: false
+---
+
+# Architecture decision records
+
+One decision per file: `docs/decisions/NNNN-short-title.md`. Take the next free number. Update the index table in `docs/decisions/README.md` in the same change.
+
+Keep an accepted ADR's decision text. A reversal is a new ADR whose status line names the record it supersedes, and the old file's status becomes `superseded by NNNN`.
+
+```markdown
+# ADR NNNN: Title
+
+- Status: proposed | accepted | superseded
+- Date: YYYY-MM-DD
+
+## Context
+
+## Decision
+
+## Consequences
+```
