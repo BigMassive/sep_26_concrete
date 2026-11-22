@@ -1,0 +1,12 @@
+---
+description: Each lab test starts from a wiped machine and is fully shut down afterwards
+alwaysApply: true
+---
+
+# Lab test sessions
+
+Until the owner says otherwise, do not preserve run-to-run lab state. The procedure is in `lab/README.md` under "Test sessions — start clean, then wipe".
+
+Before each test: stop leftovers, `./scripts/lab-down.sh --wipe`, `./scripts/lab-up.sh`, `./scripts/identity-publish.sh`, then `./scripts/node-up.sh`. A previous Circle of Trust, chain id, checkpoint, or identity package id is not something to keep.
+
+After each test: stop Godot, stop the OTP `mix`/`beam` process, `./scripts/lab-down.sh --wipe`. Leave no `sep26_lab_*` containers, Godot, or `mix run`, and leave ports 4000, 5001, 8080, 9000, 9123, and 24567 clear.

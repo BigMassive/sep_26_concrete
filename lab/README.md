@@ -17,6 +17,26 @@ Stop:
 ./scripts/lab-down.sh --wipe   # delete lab/data (new swarm key + genesis next time)
 ```
 
+## Test sessions — start clean, then wipe
+
+**Until the owner says otherwise, runs are not coherent with each other.** Do not keep a Circle of Trust, chain id, checkpoint, identity package id, or OTP node between tests.
+
+Before each test:
+
+1. Stop anything still running from a previous run (Godot, the OTP `mix`/`beam` process, lab containers).
+2. `./scripts/lab-down.sh --wipe` so `lab/data/` is gone (IPFS swarm, IOTA genesis, identity package, node, vault).
+3. `./scripts/lab-up.sh`
+4. `./scripts/identity-publish.sh` — a new IOTA genesis needs a new package.
+5. `./scripts/node-up.sh` on that empty data dir.
+6. Then the test (smoke script and/or Godot).
+
+After each test:
+
+1. Stop Godot.
+2. Stop the OTP process started by `./scripts/node-up.sh`.
+3. `./scripts/lab-down.sh --wipe`
+4. Confirm nothing is left: no `sep26_lab_*` containers, no Godot, no `mix run`, and ports **4000**, **5001**, **8080**, **9000**, **9123**, and **24567** are clear.
+
 Status:
 
 ```bash

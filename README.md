@@ -47,6 +47,8 @@ Per [docs/decisions/0001-lab-toolchain.md](docs/decisions/0001-lab-toolchain.md)
 - **Elixir / OTP** node runtime (later beats); **no Phoenix**.
 - **Required tools are open source** — no paid licences. Cursor is optional.
 
+Test runs do not keep state from the previous run. Start from a wiped `lab/data/`, and shut the stack down with a wipe afterwards. The steps are in [lab/README.md](lab/README.md#test-sessions--start-clean-then-wipe).
+
 ```bash
 ./scripts/lab-up.sh      # beat 0: private IPFS + IOTA
 ./scripts/node-up.sh     # beat 1: OTP + bootstrap capability (King)
