@@ -54,6 +54,7 @@ Record choices under `docs/decisions/` before coding:
 - [x] BEAM app shape for UI → **OTP without Phoenix**; Godot only ([ADR 0004](decisions/0004-world-state-supervisor.md))
 - [x] Interim naming for frozen slice → **lab DID + IPFS DID doc** ([ADR 0006](decisions/0006-lab-did-until-iota-identity.md)); superseded for new objects by 0007
 - [x] Name → head authority after Identity → **on-chain Identity DID doc**; OTP executor / cache ([ADR 0007](decisions/0007-iota-did-head-authority.md))
+- [x] One IOTA instance, one Circle of Trust; **G** is the single root on that instance; another CoT is another instance ([ADR 0010](decisions/0010-one-iota-instance-one-cot.md)). Chain refusal of a second root is not built yet.
 - [x] User cryptographic identity → **external FIPS 202 seed; HKDF/ML-DSA-87; pubkey as principal truth; `{pubkey, username}` as IPFS data + `did:iota`; bootstrap cap gates access** ([ADR 0008](decisions/0008-user-crypto-identity.md) accepted; stages 1–4 in lab; signatures/vault later)
 - [ ] Exact OTP process layout (index vs GenServer after 0007 D)
 - [ ] Bootstrap capability wire format (Move / DID-linked / …) when caps move on-ledger with Identity

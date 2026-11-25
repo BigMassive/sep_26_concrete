@@ -24,7 +24,7 @@ This plan is how we grow Godot into that surface **without** making Godot the le
 
 ## What is already in the repo (do not throw away)
 
-- `godot/` — Godot **4.7**, main scene `res://scenes/main.tscn`, script `godot/scripts/main.gd`. 2D Control UI: health, bootstrap, directory people, plaque create/advance, Eve deny. `HTTPRequest` sequential; principal ids are huge `mldsa87:…` strings (truncate for labels).
+- `godot/` — Godot **4.7**. Main scene `res://scenes/world.tscn` (room, body, laptop). The 2D console is `res://scenes/main.tscn` on the laptop panel, and `--console-only` opens it without the room. `HTTPRequest` sequential; principal ids are huge `mldsa87:…` strings (truncate for labels).
 - `scripts/godot-up.sh` — host Godot binary, `--path godot`.
 - `runtime/` — Bandit API, Bootstrap, InfoObjects, UserDirectory, UserIdentity sidecar.
 - `scripts/node-up.sh` — OTP `:4000`, vault dir, `lab/.venv` for dilithium-py.

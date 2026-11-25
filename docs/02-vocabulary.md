@@ -8,7 +8,7 @@ Single place for terms used in this prototype. Prefer these spellings in docs an
 | **`sep_26_concrete`** | This prototype repository and iteration. |
 | **Node** | One abstract CONCRETE computing participant in a mesh. Target hardware story: CHERI + seL4 + PQC TPM (paper). Lab runtime: **Elixir / BEAM** ([ADR 0003](decisions/0003-runtime-beam.md)). |
 | **Mesh** | Set of nodes that can cooperate; no requirement for a privileged centre *as product architecture*. |
-| **Circle of trust (CoT)** | Organisation / authority domain that runs one CONCRETE network instance. Many CoTs may exist; some may nest. Not generic PKI “circle of trust” prose. |
+| **Circle of trust (CoT)** | Organisation / authority domain that runs **one IOTA instance**. Many CoTs are many instances. An embedded CoT is another instance, named from the outer one by a DID. Not several roots on one chain, and not generic PKI “circle of trust” prose ([ADR 0010](decisions/0010-one-iota-instance-one-cot.md)). |
 | **Info object** | Versioned information with a durable name and a content head (commit graph). |
 | **Data** | Named bytes (stable **DID**, updatable **CID**) gated by **capability**. May carry a **Wendy-link** set. **Not** a plaque: no information commit-graph / content-read-write facets ([11](11-helen-alice-cot-beats.md)). |
 | **User directory** | **D3** data: `{public_key, username}` on **IPFS**, named with **`did:iota:…`**. Access cap-gated ([ADR 0008](decisions/0008-user-crypto-identity.md), [11](11-helen-alice-cot-beats.md)). |
@@ -16,7 +16,7 @@ Single place for terms used in this prototype. Prefer these spellings in docs an
 | **Name / head** | Stable **DID** that points at the current content CID. **Now:** IOTA Identity DID document ContentHead on stock IOTA when the package is configured ([ADR 0002](decisions/0002-ipfs-iota-did.md), [ADR 0007](decisions/0007-iota-did-head-authority.md)). Phase 1 leftover: lab DID + IPFS DID doc if Identity is unconfigured. |
 | **Ground truth** | Authoritative state; UI must not invent durable state. Name → head: **on-chain Identity**. Content bytes: **IPFS**. OTP: executor / cache / cap check; Godot talks only to OTP HTTP. |
 | **IINL** | Legacy Mar_25/26 IOTA IPFS name-link object. **Not** the naming path for this prototype (DID instead). |
-| **DID** | Decentralised identifier; naming from the start, including for a CoT’s IOTA when needed. |
+| **DID** | Decentralised identifier; naming from the start. A name on an instance is `did:iota:<chain id>:<identity object id>`, and the chain id is `iota_getChainIdentifier` for that genesis. The instance itself is a DID when it needs a name beyond that chain id ([ADR 0002](decisions/0002-ipfs-iota-did.md), [ADR 0010](decisions/0010-one-iota-instance-one-cot.md)). |
 | **K_DAG** | Symmetric key material for an encrypted IPFS DAG of a named object; derived per name from CoT master via HKDF in the programme map. |
 | **EK** | Endorsement key — fundamental hardware identity held in the PQC TPM story. |
 | **Capability** | Authority (as data/information) granted boss → user to perform a specific action or access a resource. May include a 4D meaning reference and identity thresholds; holder may self-restrict. **Access is cap-checked** — a GraphEdit lock flag is not the access control. Nothing on the critical path without a covering cap (once the slice implements it). |
@@ -24,7 +24,7 @@ Single place for terms used in this prototype. Prefer these spellings in docs an
 | **Funding / voucher** | Time-limited economic authority (King-issued within a CoT) required alongside capability for many mutations/maintenance. |
 | **Boss** | Role that mints or delegates capabilities (site term). Exact hierarchy (guards, …) is out of scope until modelled. |
 | **King** | Bootstrap **role** (**any** / do-anything cap). First holder has a **human name** (storyboard: **Helen**) ([ADR 0005](decisions/0005-bootstrap-capability.md), [11](11-helen-alice-cot-beats.md)). |
-| **G** | CoT first-among-equals **information** DID; Wendy-links to D1–D5 ([11](11-helen-alice-cot-beats.md)). |
+| **G** | The single root **information** DID of this CoT on this IOTA instance; Wendy-links to D1–D5. One per instance. Other names on that instance are not further CoTs ([11](11-helen-alice-cot-beats.md), [ADR 0010](decisions/0010-one-iota-instance-one-cot.md)). |
 | **D1–D5** | CoT data lists: user PKs; node EKs; username pairs; PIN pairs (tight read); pubkey→personal discovery root ([11](11-helen-alice-cot-beats.md)). |
 | **Workspace** | GraphEdit **data** (full layout) plus a **title** info object. Caps **point at** workspaces; the picture is not the authority record. Running a workspace is **cap-gated**; GraphEdit cannot mint or widen verbs ([11](11-helen-alice-cot-beats.md)). |
 | **Principal** | The **person** acting on a node. **Truth:** index-0 **ML-DSA-87 public key** ([ADR 0008](decisions/0008-user-crypto-identity.md)), encoded `mldsa87:…`. Username is an alias. |

@@ -54,8 +54,8 @@ Slice acceptance criteria are **frozen** ([04-vertical-slice.md](04-vertical-sli
 
 | Concept | Status | Intent | Touches |
 |---------|--------|--------|---------|
-| Circle of trust (CoT) | paper | Org / authority domain running one network | All scoped objects |
-| Many CoTs; nested / embedded CoTs | paper | Plurality and containment of trust domains | Caps, lists, validators |
+| Circle of trust (CoT) | paper | One authority domain per IOTA instance ([ADR 0010](decisions/0010-one-iota-instance-one-cot.md)) | All scoped objects |
+| Many CoTs; nested / embedded CoTs | paper | Many instances. An embedded CoT is another instance named from the outer one, not a second **G** on the same chain | Caps, lists, validators |
 | Network-held permitted-EK list(s) | **stub** ([11](11-helen-alice-cot-beats.md) D2) | Genesis: this node’s EK auto-listed; join-existing later | EK, caps |
 | UK TOP SECRET (+ allied) viability bar | paper | Assurance aspiration; not accreditation work here | Whole map |
 

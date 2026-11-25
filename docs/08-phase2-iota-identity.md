@@ -59,6 +59,10 @@ curl -s http://127.0.0.1:4000/v1/identity/status | python3 -m json.tool
 
 `package_configured` / `publish_ready` should be true after publish + node restart.
 
+## One instance, one CoT
+
+[ADR 0010](decisions/0010-one-iota-instance-one-cot.md): this localnet is one Circle of Trust. **G** is its single root. Other information and data names on the same chain belong to that CoT. Another CoT is another IOTA instance. Genesis does not yet fail when a second root is created.
+
 ## Still open (not this promotion)
 
 1. Typed Identity client from BEAM (or labelled sidecar) instead of `iota client ptb` — ADR 0002 preference; not a prerequisite for A–D.

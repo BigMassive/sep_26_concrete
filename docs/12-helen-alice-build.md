@@ -1,6 +1,8 @@
 # Build brief — Helen / Alice CoT (implementation)
 
-This is the **coding prompt** for a new session. Storyboard is accepted: [11-helen-alice-cot-beats.md](11-helen-alice-cot-beats.md). Architecture already accepted: [ADR 0004](decisions/0004-world-state-supervisor.md)–[0009](decisions/0009-godot-scenario-worlds.md). **Do not reopen** payments, real RINA, real seL4, 0008-5 signed HTTP, belief overlay, second OTP node, Phoenix, curl-as-user, lobbies-as-CoT.
+Storyboard is accepted: [11-helen-alice-cot-beats.md](11-helen-alice-cot-beats.md). Architecture already accepted: [ADR 0004](decisions/0004-world-state-supervisor.md)–[0009](decisions/0009-godot-scenario-worlds.md). **Do not reopen** payments, real RINA, real seL4, 0008-5 signed HTTP, belief overlay, second OTP node, Phoenix, curl-as-user, lobbies-as-CoT.
+
+**Status.** The play is in OTP and the veneer. `./scripts/godot-scenario.sh helen-alice` runs genesis through Alice login. Discovery and W2 are on the console; `./scripts/beat-smoke.sh` covers scenes 1–7 over HTTP. `./scripts/godot-playbook.sh` is still a known red path. The bullets below are the contract that code is held to.
 
 Phase 1 vertical slice stays **frozen**. Follow **11** if 0008/0009 text conflicts (paper tray keying, King-at-node-up, Wendy-links info-only).
 
@@ -9,13 +11,13 @@ Phase 1 vertical slice stays **frozen**. Follow **11** if 0008/0009 text conflic
 - Path: `sep_26_concrete`. Godot **4.7**, main scene `godot/scenes/world.tscn`, console `godot/scenes/main.tscn` in a texture rendered at the panel size times the display scale (font 16, graph zoom 1, one-pixel wires, block positions at 1.5×). Listen **:24567**. OTP `./scripts/node-up.sh` → `http://127.0.0.1:4000`. Lab: `./scripts/lab-up.sh`.
 - Godot AI (`godot/addons/godot_ai`, MIT) connects Cursor to the **open editor**. Use it to see and drive the running game. Details: [godot/README.md](../godot/README.md).
 - Godot talks **only** to OTP HTTP. No seeds in `.tscn`.
-- Today: `Bootstrap.fresh_bootstrap!` onboards **King** at start; `authorize/2` is binary `bootstrap_holders`; `POST /v1/principals` is **uncapped**; info objects have **no** links facet or per-object read/write lists. `CONCRETE_VAULT_DIR` sidecar is leftover harness.
+- Node-up does not mint King. W0 is the one-shot mint; replay fails unless zeroise. `authorize/2` checks capability records (**any** covers every verb). `POST /v1/principals` is `introduce_user` and returns `403` `capability_denied` without a covering cap. Information objects carry links and read/write lists. The session vault is an Elixir `GenServer`. `CONCRETE_VAULT_DIR` remains the lab sidecar that holds the FIPS 202 seed and exports the ML-DSA-87 public key. It is not the product vault.
 
 ## Goal
 
-Implement the **Helen → Alice** play in [11](11-helen-alice-cot-beats.md) as far as one coherent slice allows, in the **implementation order** in that doc (empty CoT → vaults → G/D1–D5 → caps vs GraphEdit → login → launcher/discovery/W2). Prefer a **clumsy but honest** path over a polished menu.
+The **Helen → Alice** play in [11](11-helen-alice-cot-beats.md), in that doc’s implementation order (empty CoT → vaults → G/D1–D5 → caps vs GraphEdit → login → launcher/discovery/W2). A clumsy honest path is enough.
 
-**Done when a human can:** power/sit; run **W0** as Helen (no pre-existing King); Exit; Alice login (PIN + paper private key → **her** vault); see discovery (D5/G, data markers); run **W2** and see a new info node. `mix test` still passes. `godot/README.md` updated.
+**Done when a human can:** power/sit; run **W0** as Helen (no pre-existing King); Exit; Alice login (PIN + paper private key → **her** vault); see discovery (D5/G, data markers); run **W2** and see a new info node. `mix test` still passes. `godot/README.md` updated. The host scenario currently stops at Alice login. Discovery and W2 are exercised by `./scripts/beat-smoke.sh` and by the console, not by that scenario.
 
 ## Must implement (from 11)
 

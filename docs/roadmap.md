@@ -7,7 +7,7 @@
 - [x] Freeze [04-vertical-slice.md](04-vertical-slice.md) acceptance criteria
 - [x] Resolve open decisions needed for the slice via ADRs (0001–0006); RINA overlay ADR still later
 - [x] Phase 2 naming authority → **IOTA Identity as name → head**; OTP executor / cache ([ADR 0007](decisions/0007-iota-did-head-authority.md))
-- [ ] Optional: short link/PR note on BigMassive/CONCRETE pointing at this prototype
+- [x] Short link on [BigMassive/CONCRETE](https://github.com/BigMassive/CONCRETE) README pointing at this prototype
 
 ## Phase 1 — Thin vertical slice
 
@@ -28,6 +28,7 @@ Promote backlog items deliberately (stub → slice).
 3. **User cryptographic identity** — **accepted** ([ADR 0008](decisions/0008-user-crypto-identity.md)): stages **1–4 done**. Stage 5 later (signed mutates / vault).
 4. **Godot scenario worlds** — **accepted** ([ADR 0009](decisions/0009-godot-scenario-worlds.md), [docs/09](09-godot-scenario-worlds.md)): 3D room + session host; node console. A **playbook bot** is a headless peer (`godot-playbook.sh` is still a known red path). A **host scenario** drives the console in one process. Belief overlay later.
 5. **Helen / Alice CoT** — storyboard **accepted** ([docs/11](11-helen-alice-cot-beats.md)); the console play is in the veneer per [docs/12](12-helen-alice-build.md). `./scripts/godot-scenario.sh helen-alice` runs genesis through Alice login. Discovery and W2 stay on the console. Payments, real seL4, second node, 0008-5 still later.
+6. **One IOTA instance, one CoT** — **accepted** ([ADR 0010](decisions/0010-one-iota-instance-one-cot.md)). **G** is the single root on that instance. Another CoT is another instance. The chain does not yet refuse a second root.
 
 Do **not** couple this with: typed BEAM Identity SDK, signed HTTP as the *user* path (until 0008-5), on-ledger bootstrap cap, deleting the OTP node, real RINA, Phoenix, curl-as-King playbooks as the long-term actor.
 

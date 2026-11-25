@@ -1,6 +1,6 @@
 # Programme map (working outline)
 
-Owner outline for Project CONCRETE foundations as they constrain `sep_26_concrete`. **Most items are paper** for this prototype — see triage in [05-concept-backlog.md](05-concept-backlog.md). Vertical slice freeze is still pending.
+Owner outline for Project CONCRETE foundations as they constrain `sep_26_concrete`. **Most items are paper** for this prototype — see triage in [05-concept-backlog.md](05-concept-backlog.md). The vertical slice is **frozen** ([04-vertical-slice.md](04-vertical-slice.md), 2026-09-08). This map does not reopen that acceptance list.
 
 Certainty: treat this document as **Probable** programme shape unless marked otherwise. It is not an implementation plan.
 
@@ -16,7 +16,7 @@ Certainty: treat this document as **Probable** programme shape unless marked oth
 ## Circles of trust
 
 - Organisation running one of these networks = **circle of trust (CoT)**.
-- Expect **many** CoTs; some may be **embedded within others**.
+- One IOTA instance holds one CoT. The instance is that genesis’s chain id (`iota_getChainIdentifier`). **Many** CoTs are many instances. A CoT **embedded** in another is another instance, named from the outer one by a DID, not a second **G** on the outer chain ([ADR 0010](decisions/0010-one-iota-instance-one-cot.md)).
 - Network-held **permitted-EK list(s)**; updated by actors with a suitable **capability** as hardware enters service.
 
 ## Assurance bar
@@ -95,4 +95,4 @@ Residue from Mar_25 Godot lab + site — keep **structure**, not the falsity har
 
 Implementation of hardware, RINA plant, TSS/MPC, real PQC, settler/journals, presence math, dongles, and accreditation — see [06-out-of-scope.md](06-out-of-scope.md) and backlog statuses.
 
-Next docs step: freeze [04-vertical-slice.md](04-vertical-slice.md) against a minimal subset of the above.
+The vertical slice is already frozen in [04-vertical-slice.md](04-vertical-slice.md). Further work is a Phase 2 promotion on the [roadmap](roadmap.md), not a second freeze of this map.

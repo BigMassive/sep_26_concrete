@@ -6,7 +6,7 @@ Phase 1 vertical slice stays **frozen**. Do not “fix” Identity/OTP as part o
 
 ## Repo facts
 
-- Path: `sep_26_concrete`. Godot **4.5**, `godot/project.godot`, main scene `godot/scenes/main.tscn` (2D form).
+- Path: `sep_26_concrete`. Godot **4.7**, `godot/project.godot`, main scene `godot/scenes/world.tscn`. The 2D console is `godot/scenes/main.tscn`, instanced on the laptop. `--console-only` opens that console without the room.
 - OTP: `./scripts/node-up.sh` → `http://127.0.0.1:4000`. Lab IPFS/IOTA: `./scripts/lab-up.sh`.
 - Principals: `mldsa87:` + urlsafe b64. Sidecar: `scripts/user-identity.py`, vault `lab/data/vault/`.
 - Godot must keep talking **only** to OTP HTTP (ADR 0004). No IPFS/IOTA from GDScript.
@@ -14,7 +14,7 @@ Phase 1 vertical slice stays **frozen**. Do not “fix” Identity/OTP as part o
 
 ## Goal of this build-out
 
-Deliver **stages 1–4** of [09](09-godot-scenario-worlds.md):
+Stages **1–3** of [09](09-godot-scenario-worlds.md) are in the tree. Stage **4**’s headless peer is still the known red path (`./scripts/godot-playbook.sh`). The list below is the contract.
 
 1. **3D room** (box room, floor, desk, laptop mesh or CSG stand-in), **one player body** (capsule or simple ragdoll, distinctive colour), **WASD/mouse look**, **listen-server session** so a **second Godot process can join** and appear as a second coloured body.
 2. **Node console:** proximity + interact on the laptop; nest the **existing** 2D UI (or a moved copy of `main.gd`) in a SubViewport; mouse/keyboard drive that UI; **Esc** stands up.
@@ -63,13 +63,13 @@ Keep it boring. Pickup may still be a step (inventory, **not** `p.keyed`). Plaqu
 
 ## Definition of done (this brief)
 
-- [ ] 3D main scene (or a new `world.tscn` as `run/main_scene`) with room, desk, laptop, walking body.
-- [ ] Second process can join and is visible.
-- [ ] Laptop console = existing OTP UI; Esc unsits.
-- [ ] Issuance tray is set dressing; keying is W0/login (see [11](11-helen-alice-cot-beats.md)).
-- [ ] Headless playbook: `create_plaque` / `eve_deny` fail-fast (`superseded_step`). `godot-playbook.sh first-login` is a known red path. Helen → Alice is `./scripts/godot-scenario.sh helen-alice`.
-- [ ] `godot/README.md` updated; 2D-only path explained if kept as a debug scene.
-- [ ] No secrets committed; `lab/data/` stays gitignored.
+- [x] 3D main scene `godot/scenes/world.tscn` (`run/main_scene`) with room, desk, laptop, walking body.
+- [ ] Second process can join and is visible. The listen server and a join step exist. `./scripts/godot-playbook.sh` is still a known red path, so this item is not confirmed.
+- [x] Laptop console is the OTP UI on the laptop panel. Esc unsits. The session stays logged in until Exit session.
+- [x] Issuance tray is set dressing. Keying is W0 / login ([11](11-helen-alice-cot-beats.md)).
+- [x] Headless playbook: `create_plaque` / `eve_deny` fail-fast (`superseded_step`). `godot-playbook.sh first-login` is a known red path. Helen → Alice is `./scripts/godot-scenario.sh helen-alice`.
+- [x] `godot/README.md` describes the room, the host scenario, and the 2D console (`--console-only` or `scenes/main.tscn`).
+- [x] No secrets committed. `lab/data/` stays gitignored.
 
 **Next:** Helen/Alice CoT — [docs/11](../11-helen-alice-cot-beats.md), brief [docs/12](../12-helen-alice-build.md).
 

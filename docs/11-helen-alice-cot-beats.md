@@ -15,7 +15,7 @@ Godot remains veneer; durable mutates are OTP HTTP → IPFS + IOTA Identity ([AD
 | Term | Meaning here |
 |------|----------------|
 | **King** | Bootstrap **role**, not a username. First holder is Helen. She holds the **any** capability ([ADR 0005](decisions/0005-bootstrap-capability.md)). |
-| **G** | CoT **first-among-equals** **information** DID — the global starting point. |
+| **G** | CoT **first-among-equals** **information** DID — the single root on **this** IOTA instance, and the global starting point. Another CoT is another instance ([ADR 0010](decisions/0010-one-iota-instance-one-cot.md)). A later **node** of this CoT stays on this instance. |
 | **D1** | Data: whitelist of **user** pubkeys (CoT membership of people). |
 | **D2** | Data: whitelist of **node EK** pubkeys (boxes). |
 | **D3** | Data: pubkey ↔ **username** (existing directory job, [ADR 0008](decisions/0008-user-crypto-identity.md)). |
@@ -79,7 +79,7 @@ Most user caps in this beat **point at** a workspace CID. Helen’s King **any**
 
 The **King-making GraphEdit** is **part of the underlying system** (boot chooser, uninitialized node). No prior cap. **Revisit** later. After success, 0005 applies: first principal + bootstrap mint is **one-shot**; **further** writes (G, D1–D5, workspaces) are **cap-checked as Helen**.
 
-Today `Bootstrap.fresh_bootstrap!` onboards King at `node-up` — that **must stop** for empty CoT (delay until genesis workspace succeeds). No two Kings.
+Node-up does not mint King. W0 is the one-shot mint. Replay fails unless zeroise. No two Kings.
 
 ## Workspaces in this beat
 
@@ -156,7 +156,6 @@ Force-directed graph. Edges = Wendy-links. Info vs data **icons**. Titles only. 
 ## Named gaps (do not solve here)
 
 - IOTA **ControllerCap** is still the **lab wallet**, not Helen ([ADR 0007](decisions/0007-iota-did-head-authority.md)).
-- `POST /v1/principals` is uncapped today — must become cap-gated when coding W1.
 - Signed HTTP / challenge (0008-5).
 - Real seL4; NIF costume **rejected** — Elixir + comments only.
 - Many vaults on many nodes.

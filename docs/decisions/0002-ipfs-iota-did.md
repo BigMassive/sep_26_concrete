@@ -29,6 +29,7 @@ Naming preference is **DID** (via **IOTA Identity** on stock IOTA) from the star
 - Vertical slice acceptance criteria should say **DID → head CID**, not IINL.
 - Wendy-link endpoints use DIDs (optional CID still pins a version).
 - Programme-map items (K_DAG TSS, permitted-EK lists, etc.) may key off DID strings when promoted; no IINL dependency.
+- One instance is one Circle of Trust. Another CoT is another instance ([ADR 0010](0010-one-iota-instance-one-cot.md)). Decision 4 (the instance named as a DID when needed) is unchanged.
 - Out-of-scope “RINA” means **not in the first TCP/IP compose path**, not “never in sep_26.”
 - IPFS and IOTA remain **replaceable** stand-ins; docs and code comments must not treat them as the end-state fabric.
 - Runtime is **Elixir / BEAM** ([ADR 0003](0003-runtime-beam.md)); use libraries/HTTP APIs from Elixir for IPFS and IOTA Identity.
