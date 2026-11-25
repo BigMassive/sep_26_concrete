@@ -88,9 +88,39 @@ defmodule ConcreteRuntime.BootstrapTest do
     by_id = Map.new(layout["nodes"], &{&1["id"], &1})
 
     assert by_id["run"]["type"] == "commit"
+    assert by_id["access"]["type"] == "people_picker"
+    assert by_id["d3"]["type"] == "data"
+    assert by_id["d3"]["subtitle"] =~ "source"
+    refute Map.has_key?(by_id, "readers")
+    refute Map.has_key?(by_id, "writers")
     assert by_id["info"]["type"] == "info"
     assert by_id["d5"]["type"] == "data"
     assert by_id["d5"]["subtitle"] =~ "will link"
+  end
+
+  test "W2 feeds one D3 node into the picker, and read/write lists into commit" do
+    assert {:ok, _} = ConcreteRuntime.Workspaces.genesis(TestKit.helen_attrs())
+    helen = ConcreteRuntime.Bootstrap.status().king.id
+    assert {:ok, ws} = ConcreteRuntime.Workspaces.get(helen, "w2")
+    by_id = Map.new(ws.layout["nodes"], &{&1["id"], &1})
+
+    assert by_id["d3"]["title"] == "D3"
+    refute Map.has_key?(by_id, "person-0")
+
+    assert by_id["access"]["people"] == [
+             %{"username" => "Helen", "public_key" => helen, "self" => true}
+           ]
+
+    into_access = Enum.filter(ws.layout["wires"], &(&1["to"] == "access"))
+    assert into_access == [%{"from" => "d3", "from_port" => 0, "to" => "access", "to_port" => 0}]
+
+    assert %{"from" => "access", "from_port" => 2, "to" => "run", "to_port" => 1} in ws.layout[
+             "wires"
+           ]
+
+    assert %{"from" => "access", "from_port" => 3, "to" => "run", "to_port" => 2} in ws.layout[
+             "wires"
+           ]
   end
 
   test "first boot is an empty CoT — no auto-King" do

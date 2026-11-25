@@ -15,6 +15,8 @@ const KIND_COLORS := {
 	"text_in": Color(0.22, 0.38, 0.52),
 	"text_out": Color(0.22, 0.38, 0.52),
 	"user_picker": Color(0.22, 0.38, 0.52),
+	"people_picker": Color(0.22, 0.38, 0.52),
+	"person": Color(0.28, 0.36, 0.48),
 	"run": Color(0.58, 0.28, 0.46),
 	"commit": Color(0.22, 0.52, 0.36),
 	"populate": Color(0.2, 0.42, 0.48),
@@ -49,6 +51,9 @@ var _usernames: Array = []
 var _shown_pin: String = ""
 var _screen: String = ""
 var _discovery: DiscoveryView = null
+var _info_panel: PanelContainer = null
+var _info_title: Label = null
+var _info_body: Label = null
 var _w0_tabs: TabContainer = null
 var _graph_nodes: Dictionary = {}
 var _graph_kinds: Dictionary = {}
@@ -268,7 +273,9 @@ func _on_http_completed(_result: int, code: int, _headers: PackedStringArray, bo
 				return
 			if typeof(parsed) == TYPE_DICTIONARY:
 				_show_discovery(parsed)
-			status_label.text = "Discovery (data = markers; unread info omitted)."
+			status_label.text = "Discovery (data = markers; unread info omitted). Click an info node to read it."
+		"info_object":
+			_fill_info_panel(code, parsed, text)
 		"save_graph":
 			if code == 403:
 				status_label.text = "Denied — GraphEdit cannot widen authority."
@@ -320,6 +327,9 @@ func _clear_screen() -> void:
 	_commit_btn = null
 	_populate_btn = null
 	_discovery = null
+	_info_panel = null
+	_info_title = null
+	_info_body = null
 	_w0_tabs = null
 	_screen = ""
 	_stop_busy_timer()
@@ -649,6 +659,12 @@ func _build_graph(parent: Control, layout: Dictionary) -> void:
 				gn.add_child(item)
 				_graph_inputs[nid] = item
 				_set_io_slot(gn, 0, true, true)
+			"person":
+				_add_subtitle(gn, n)
+				_set_io_slot(gn, 0, false, true)
+			"people_picker":
+				_build_people_picker(gn, n)
+				_graph_inputs[nid] = gn
 			"populate":
 				_add_subtitle(gn, n)
 				var pb := Button.new()
@@ -850,6 +866,11 @@ func _node_min_size(typ: String, n: Dictionary = {}) -> Vector2:
 			return Vector2(190, 44 + float(ports.size()) * 18.0) * s
 		"note":
 			return Vector2(160, 48) * s
+		"person":
+			return Vector2(120, 36) * s
+		"people_picker":
+			var people: Array = n.get("people", [])
+			return Vector2(280, 96 + float(people.size()) * 36.0) * s
 		_:
 			return Vector2(150, 48) * s
 
@@ -974,6 +995,74 @@ func _graph_text(id: String) -> String:
 	return ""
 
 
+func _build_people_picker(gn: GraphNode, n: Dictionary) -> void:
+	var people: Array = n.get("people", [])
+	var from_d3 := Label.new()
+	from_d3.text = "from D3"
+	from_d3.add_theme_font_size_override("font_size", GRAPH_FONT)
+	gn.add_child(from_d3)
+	_set_io_slot(gn, 0, true, false)
+	var slot := 1
+	for p_any in people:
+		if typeof(p_any) != TYPE_DICTIONARY:
+			continue
+		var p: Dictionary = p_any
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", 8)
+		var name := Label.new()
+		name.text = str(p.get("username", ""))
+		name.custom_minimum_size = Vector2(72, 0)
+		name.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		name.add_theme_font_size_override("font_size", GRAPH_FONT)
+		var read_box := CheckBox.new()
+		read_box.text = "Read"
+		var write_box := CheckBox.new()
+		write_box.text = "Write"
+		read_box.add_theme_font_size_override("font_size", GRAPH_FONT)
+		write_box.add_theme_font_size_override("font_size", GRAPH_FONT)
+		var is_self := bool(p.get("self", false))
+		if not is_self and str(p.get("public_key", "")) == session_principal_id and not session_principal_id.is_empty():
+			is_self = true
+		if not is_self and str(p.get("username", "")) == session_username and not session_username.is_empty():
+			is_self = true
+		read_box.button_pressed = is_self
+		write_box.button_pressed = is_self
+		row.add_child(name)
+		row.add_child(read_box)
+		row.add_child(write_box)
+		row.set_meta("username", str(p.get("username", "")))
+		row.set_meta("read", read_box)
+		row.set_meta("write", write_box)
+		gn.add_child(row)
+		_set_io_slot(gn, slot, false, false)
+		slot += 1
+	var read_out := Label.new()
+	read_out.text = "read list"
+	read_out.add_theme_font_size_override("font_size", GRAPH_FONT)
+	gn.add_child(read_out)
+	_set_io_slot(gn, slot, false, true)
+	slot += 1
+	var write_out := Label.new()
+	write_out.text = "write list"
+	write_out.add_theme_font_size_override("font_size", GRAPH_FONT)
+	gn.add_child(write_out)
+	_set_io_slot(gn, slot, false, true)
+
+
+func _graph_access(which: String) -> Array:
+	var gn: Variant = _graph_inputs.get("access")
+	var names: Array = []
+	if not (gn is GraphNode):
+		return names
+	for c in (gn as GraphNode).get_children():
+		if not c.has_meta("username"):
+			continue
+		var box: Variant = c.get_meta(which)
+		if box is CheckBox and (box as CheckBox).button_pressed:
+			names.append(str(c.get_meta("username")))
+	return names
+
+
 func _graph_picked(id: String) -> Array:
 	var c: Variant = _graph_inputs.get(id)
 	var names: Array = []
@@ -1017,8 +1106,8 @@ func _on_run_graph() -> void:
 				"principal_id": _actor(),
 				"id": "w2",
 				"text": _graph_text("text"),
-				"readers": _graph_picked("readers"),
-				"writers": _graph_picked("writers"),
+				"readers": _graph_access("read"),
+				"writers": _graph_access("write"),
 				"link_did": _graph_text("link"),
 			}, "run_w2")
 		_:
@@ -1111,13 +1200,90 @@ func _show_discovery(graph: Dictionary) -> void:
 	_screen = "discovery"
 	var box := _vbox()
 	box.add_child(_heading("Discovery"))
-	box.add_child(_note("Walk from D5[user]. Info filtered by read list. Data = markers (no D4 bytes)."))
+	box.add_child(_note("Walk from D5[user]. The layout settles. Click an info node to read it. Data = markers (no D4 bytes)."))
 	box.add_child(_btn("Exit to menu", _return_to_menu))
+	var split := HBoxContainer.new()
+	split.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	split.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	split.add_theme_constant_override("separation", 12)
 	_discovery = DiscoveryView.new()
+	_discovery.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_discovery.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_discovery.custom_minimum_size = Vector2(0, 360)
+	_discovery.open_info.connect(_on_open_info)
 	_discovery.setup(graph)
-	box.add_child(_discovery)
+	split.add_child(_discovery)
+	_info_panel = _make_info_panel()
+	split.add_child(_info_panel)
+	box.add_child(split)
+
+
+func _make_info_panel() -> PanelContainer:
+	var panel := PanelContainer.new()
+	panel.custom_minimum_size = Vector2(300, 0)
+	panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	panel.visible = false
+	var inner := VBoxContainer.new()
+	inner.add_theme_constant_override("separation", 8)
+	panel.add_child(inner)
+	var head := HBoxContainer.new()
+	_info_title = Label.new()
+	_info_title.text = "Information"
+	_info_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_info_title.add_theme_font_size_override("font_size", 16)
+	head.add_child(_info_title)
+	head.add_child(_btn("Close", _close_info_panel))
+	inner.add_child(head)
+	_info_body = Label.new()
+	_info_body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_info_body.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_info_body.add_theme_font_size_override("font_size", 14)
+	inner.add_child(_info_body)
+	return panel
+
+
+func _on_open_info(did: String) -> void:
+	if _info_panel == null or not is_instance_valid(_info_panel):
+		return
+	_info_panel.visible = true
+	if _info_title:
+		_info_title.text = "Information"
+	if _info_body:
+		_info_body.text = "Reading…"
+	_http_get("/v1/info_object?principal_id=%s&did=%s" % [_actor().uri_encode(), did.uri_encode()], "info_object")
+
+
+func _close_info_panel() -> void:
+	if _info_panel and is_instance_valid(_info_panel):
+		_info_panel.visible = false
+
+
+func _fill_info_panel(code: int, parsed: Variant, _raw: String) -> void:
+	if _screen != "discovery" or _info_body == null or not is_instance_valid(_info_body):
+		return
+	if _info_panel:
+		_info_panel.visible = true
+	if code >= 400 or typeof(parsed) != TYPE_DICTIONARY:
+		_info_body.text = "Could not read this object (%s)." % code
+		return
+	var obj: Dictionary = parsed
+	if _info_title:
+		_info_title.text = str(obj.get("label", "Information"))
+	_info_body.text = "%s\n\nDID\n%s\n\nRead\n%s\n\nWrite\n%s" % [
+		str(obj.get("content", "")),
+		str(obj.get("did", "")),
+		_join_ids(obj.get("read_list", [])),
+		_join_ids(obj.get("write_list", [])),
+	]
+
+
+func _join_ids(items: Variant) -> String:
+	if typeof(items) != TYPE_ARRAY or (items as Array).is_empty():
+		return "—"
+	var parts := PackedStringArray()
+	for item in items:
+		parts.append(str(item))
+	return ", ".join(parts)
 
 
 func _heading(text: String) -> Label:
@@ -1142,14 +1308,19 @@ func _short_principal(id: String) -> String:
 
 
 class DiscoveryView extends Control:
+	signal open_info(did: String)
+
 	var nodes: Array = []
 	var edges: Array = []
 	var _pos: Dictionary = {}
 	var _vel: Dictionary = {}
+	var _temperature := 1.0
+	var _settled := false
 
 	func setup(graph: Dictionary) -> void:
 		nodes = graph.get("nodes", [])
 		edges = graph.get("edges", [])
+		mouse_filter = Control.MOUSE_FILTER_STOP
 		var i := 0
 		for n_any in nodes:
 			if typeof(n_any) != TYPE_DICTIONARY:
@@ -1157,22 +1328,48 @@ class DiscoveryView extends Control:
 			var n: Dictionary = n_any
 			var did := str(n.get("did", i))
 			var ang := TAU * float(i) / maxf(float(nodes.size()), 1.0)
-			_pos[did] = Vector2(420, 200) + Vector2(cos(ang), sin(ang)) * 140.0
+			_pos[did] = Vector2(420, 200) + Vector2(cos(ang), sin(ang)) * 220.0
 			_vel[did] = Vector2.ZERO
 			i += 1
 		queue_redraw()
-		set_process(true)
+		set_process(nodes.size() > 1)
+
+	func _gui_input(event: InputEvent) -> void:
+		if not (event is InputEventMouseButton):
+			return
+		var click := event as InputEventMouseButton
+		if not click.pressed or click.button_index != MOUSE_BUTTON_LEFT:
+			return
+		for i in range(nodes.size() - 1, -1, -1):
+			var n_any: Variant = nodes[i]
+			if typeof(n_any) != TYPE_DICTIONARY:
+				continue
+			var n: Dictionary = n_any
+			if str(n.get("kind", "")) != "info":
+				continue
+			var did := str(n.get("did", ""))
+			var p: Vector2 = _pos.get(did, Vector2.ZERO)
+			var title := _node_title(n)
+			if click.position.distance_to(p) <= 18.0 or _label_rect(p, title).has_point(click.position):
+				open_info.emit(did)
+				accept_event()
+				return
 
 	func _process(delta: float) -> void:
-		if nodes.is_empty():
+		if _settled or nodes.size() <= 1:
+			_settled = true
+			set_process(false)
 			return
+		var energy := 0.0
 		for a_any in nodes:
 			if typeof(a_any) != TYPE_DICTIONARY:
 				continue
 			var a: Dictionary = a_any
 			var aid := str(a.get("did", ""))
 			var pa: Vector2 = _pos.get(aid, Vector2.ZERO)
-			var force := (Vector2(420, 200) - pa) * 0.02
+			var force := (Vector2(420, 200) - pa) * 0.008
+			var title_a := _node_title(a)
+			var ra := _label_rect(pa, title_a)
 			for b_any in nodes:
 				if typeof(b_any) != TYPE_DICTIONARY:
 					continue
@@ -1182,23 +1379,42 @@ class DiscoveryView extends Control:
 					continue
 				var pb: Vector2 = _pos.get(bid, Vector2.ZERO)
 				var d: Vector2 = pa - pb
-				var L := maxf(d.length(), 8.0)
-				force += d.normalized() * (1800.0 / (L * L))
+				var L := maxf(d.length(), 28.0)
+				force += d.normalized() * (6400.0 / (L * L))
+				force += _label_push(ra, _label_rect(pb, _node_title(b)))
 			for e_any in edges:
 				if typeof(e_any) != TYPE_DICTIONARY:
 					continue
 				var e: Dictionary = e_any
 				if str(e.get("from", "")) == aid:
-					var other: Vector2 = _pos.get(str(e.get("to", "")), pa)
-					force += (other - pa) * 0.015
+					force += _spring(_pos.get(str(e.get("to", "")), pa) - pa)
 				elif str(e.get("to", "")) == aid:
-					var other2: Vector2 = _pos.get(str(e.get("from", "")), pa)
-					force += (other2 - pa) * 0.015
+					force += _spring(_pos.get(str(e.get("from", "")), pa) - pa)
 			var v: Vector2 = _vel.get(aid, Vector2.ZERO)
-			v = (v + force) * 0.85
+			v = (v + force * _temperature) * lerpf(0.28, 0.82, _temperature)
+			if v.length() > 14.0:
+				v = v.limit_length(14.0)
+			if v.length() < 0.2:
+				v = Vector2.ZERO
 			_vel[aid] = v
 			_pos[aid] = pa + v * delta * 60.0
+			energy += v.length_squared()
+		_temperature *= pow(0.982, delta * 60.0)
+		if _temperature < 0.05 or (_temperature < 0.45 and energy < 0.35):
+			_freeze()
+			return
 		queue_redraw()
+
+	func _freeze() -> void:
+		_settled = true
+		for key in _vel.keys():
+			_vel[key] = Vector2.ZERO
+		set_process(false)
+		queue_redraw()
+
+	func _node_title(n: Dictionary) -> String:
+		var did := str(n.get("did", ""))
+		return "%s  %s" % [str(n.get("title", str(n.get("kind", "")))), did.substr(0, mini(did.length(), 28))]
 
 	func _draw() -> void:
 		for e_any in edges:
@@ -1219,3 +1435,27 @@ class DiscoveryView extends Control:
 			draw_circle(p, 14.0, col)
 			var title := "%s  %s" % [str(n.get("title", kind)), did.substr(0, mini(did.length(), 28))]
 			draw_string(ThemeDB.fallback_font, p + Vector2(18, 4), title, HORIZONTAL_ALIGNMENT_LEFT, -1, 14, Color(0.92, 0.93, 0.95))
+
+	func _label_rect(p: Vector2, title: String) -> Rect2:
+		var width := ThemeDB.fallback_font.get_string_size(title, HORIZONTAL_ALIGNMENT_LEFT, -1, 14).x
+		return Rect2(p + Vector2(16, -10), Vector2(width + 8.0, 22.0))
+
+	func _label_push(a: Rect2, b: Rect2) -> Vector2:
+		var pad := 10.0
+		var ax := minf(a.end.x, b.end.x) - maxf(a.position.x, b.position.x)
+		var ay := minf(a.end.y, b.end.y) - maxf(a.position.y, b.position.y)
+		if ax + pad <= 0.0 or ay + pad <= 0.0:
+			return Vector2.ZERO
+		var push := Vector2.ZERO
+		var sep := a.get_center() - b.get_center()
+		if ax < ay:
+			push.x = signf(sep.x if absf(sep.x) > 0.5 else 1.0) * (ax + pad) * 0.55
+		else:
+			push.y = signf(sep.y if absf(sep.y) > 0.5 else 1.0) * (ay + pad) * 0.9
+		return push
+
+	func _spring(toward: Vector2) -> Vector2:
+		var dist := toward.length()
+		if dist < 1.0:
+			return Vector2.ZERO
+		return toward.normalized() * (dist - 190.0) * 0.012

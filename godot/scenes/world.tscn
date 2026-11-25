@@ -1,7 +1,6 @@
-[gd_scene load_steps=3 format=3 uid="uid://bsep26world"]
+[gd_scene load_steps=2 format=3 uid="uid://bsep26world"]
 
 [ext_resource type="Script" path="res://scripts/world.gd" id="1_world"]
-[ext_resource type="Texture2D" uid="uid://1p4k543vgs3n" path="res://images/concrete_icon_200.png" id="2_mark"]
 
 [node name="World" type="Node3D"]
 script = ExtResource("1_world")
@@ -22,21 +21,6 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
-
-[node name="Mark" type="TextureRect" parent="HUD/Root"]
-layout_mode = 1
-anchors_preset = 1
-anchor_left = 1.0
-anchor_right = 1.0
-offset_left = -80.0
-offset_top = 12.0
-offset_right = -16.0
-offset_bottom = 76.0
-grow_horizontal = 0
-mouse_filter = 2
-texture = ExtResource("2_mark")
-expand_mode = 1
-stretch_mode = 5
 
 [node name="Session" type="Label" parent="HUD/Root"]
 unique_name_in_owner = true

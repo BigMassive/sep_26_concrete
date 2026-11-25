@@ -340,18 +340,20 @@ defmodule ConcreteRuntime.Workspaces do
       "nodes" => [
         %{"id" => "text", "title" => "Text", "x" => 40, "y" => 40, "type" => "text_in"},
         %{
-          "id" => "readers",
-          "title" => "Read (usernames)",
+          "id" => "d3",
+          "title" => "D3",
+          "subtitle" => "source — usernames",
           "x" => 40,
           "y" => 220,
-          "type" => "user_picker"
+          "type" => "data"
         },
         %{
-          "id" => "writers",
-          "title" => "Write (usernames)",
-          "x" => 40,
-          "y" => 440,
-          "type" => "user_picker"
+          "id" => "access",
+          "title" => "Who can read / write",
+          "subtitle" => "Tick people. You start with read and write.",
+          "x" => 340,
+          "y" => 200,
+          "type" => "people_picker"
         },
         %{
           "id" => "link",
@@ -410,8 +412,6 @@ defmodule ConcreteRuntime.Workspaces do
       ],
       "wires" => [
         wire("text", 0, "run", 0),
-        wire("readers", 0, "run", 1),
-        wire("writers", 0, "run", 2),
         wire("link", 0, "run", 3),
         wire("run", 0, "info", 0),
         wire("run", 1, "info", 0),
@@ -1003,7 +1003,7 @@ defmodule ConcreteRuntime.Workspaces do
       data_cid: workspace_cid(w),
       title_did: w.title_did,
       locked: w.locked,
-      layout: workspace_layout(w),
+      layout: workspace_layout(w, actor_id),
       usernames: if(w.id == "w2", do: ConcreteRuntime.DataObjects.usernames(), else: []),
       g_did: cot["g_did"],
       runnable: can_run?(actor_id, w.id)
@@ -1017,20 +1017,58 @@ defmodule ConcreteRuntime.Workspaces do
     end
   end
 
-  defp workspace_layout(w) do
+  defp workspace_layout(w, actor_id) do
     # Locked graphs are server-authored; serve the current layout so UX
     # iteration does not require re-genesis.
-    if Map.get(w, :locked) == true do
-      layout_for(w.id)
-    else
-      case ConcreteRuntime.DataObjects.record(w.data_did) do
-        %{payload: payload} ->
-          payload["layout"] || payload[:layout] || w.layout || layout_for(w.id)
+    layout =
+      if Map.get(w, :locked) == true do
+        layout_for(w.id)
+      else
+        case ConcreteRuntime.DataObjects.record(w.data_did) do
+          %{payload: payload} ->
+            payload["layout"] || payload[:layout] || w.layout || layout_for(w.id)
 
-        _ ->
-          w.layout || layout_for(w.id)
+          _ ->
+            w.layout || layout_for(w.id)
+        end
       end
+
+    if w.id == "w2" do
+      decorate_w2(layout, ConcreteRuntime.DataObjects.usernames(), actor_id)
+    else
+      layout
     end
+  end
+
+  # One D3 node is the source. A single wire enters the picker. Read list
+  # and write list are the picker's outputs into the commit block. The author
+  # is marked so the veneer can pre-tick them.
+  defp decorate_w2(layout, usernames, actor_id) do
+    picked =
+      Enum.map(usernames, fn user ->
+        %{
+          "username" => user.username,
+          "public_key" => user.public_key,
+          "self" => user.public_key == actor_id
+        }
+      end)
+
+    n = length(picked)
+
+    nodes =
+      Enum.map(layout["nodes"] || [], fn node ->
+        if node["id"] == "access", do: Map.put(node, "people", picked), else: node
+      end)
+
+    wires =
+      (layout["wires"] || []) ++
+        [
+          wire("d3", 0, "access", 0),
+          wire("access", n + 1, "run", 1),
+          wire("access", n + 2, "run", 2)
+        ]
+
+    %{layout | "nodes" => nodes, "wires" => wires}
   end
 
   defp layout_for("w1"), do: w1_layout()

@@ -7,7 +7,6 @@ extends Node3D
 const SESSION_PORT := 24567
 const PLAYER_SCENE := preload("res://scenes/player.tscn")
 const CONSOLE_SCENE := preload("res://scenes/main.tscn")
-const CONCRETE_MARK := preload("res://images/concrete_icon_200.png")
 const SIT_RANGE := 2.4
 const PICKUP_RANGE := 1.8
 const GIVE_RANGE := 2.2
@@ -867,15 +866,6 @@ func _build_persona_landing() -> void:
 	var inner := VBoxContainer.new()
 	inner.add_theme_constant_override("separation", 10)
 	panel.add_child(inner)
-	var mark_row := CenterContainer.new()
-	inner.add_child(mark_row)
-	var mark := TextureRect.new()
-	mark.custom_minimum_size = Vector2(72, 72)
-	mark.texture = CONCRETE_MARK
-	mark.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	mark.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	mark.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	mark_row.add_child(mark)
 	var title := Label.new()
 	title.text = "Personas"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER

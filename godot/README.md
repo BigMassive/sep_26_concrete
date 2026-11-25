@@ -56,8 +56,8 @@ Live HTTP check (no Godot): `./scripts/w0-smoke.sh` (W0) and `./scripts/beat-smo
 3. Launcher (the menu): **Exit to menu** from W1, W2, or Discovery comes back here and stays logged in. Helen stays seated. Switch to **Alice** (new body near the identity desk). Pick up her **public-key copy**, walk to Helen, **G** to put it in Helen’s inventory. Switch back to Helen → **W1** → **Populate** (Alice’s name and public key — never Helen’s). Generated PIN is shown once — tell Alice. Helen can run W1 because she holds **any**; Alice cannot (no covering cap). GraphEdit still cannot mint verbs (save layout is denied server-side).
 4. **Exit session** (not only Esc).
 5. **Login** as Alice: username + PIN + paper **private** key. Starts Alice’s vault. Wrong PIN / not on D1 / no key fail closed.
-6. **Discovery**: force graph from D5[Alice]; info she may read; data markers only (no D4 bytes).
-7. Run **W2**: text, username picker for read/write, Wendy-link DID (e.g. G). Auto-links her D5. Discovery shows the new info node.
+6. **Discovery**: force graph from D5[Alice]; it settles still. Click an info node to read it in the side panel, then close it. Data markers only (no D4 bytes).
+7. Run **W2**: text; one D3 node feeds the read/write picker (you start ticked for both); read list and write list wire into Go / Commit; Wendy-link DID (e.g. G). Auto-links her D5. Discovery shows the new info node.
 
 **Power off** on the console makes OTP product routes **503**. **Zeroise** re-opens King-making (full chain/D2 wipe is stubbed).
 
