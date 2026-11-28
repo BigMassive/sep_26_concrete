@@ -4,7 +4,7 @@
 
 ## One command
 
-From the repo root (requires Docker + Compose, `openssl`, `curl`):
+From the repo root (requires Docker + Compose, `openssl`, `curl`). `./scripts/session-up.sh` runs `./scripts/check-host.sh` before it wipes anything:
 
 ```bash
 ./scripts/lab-up.sh

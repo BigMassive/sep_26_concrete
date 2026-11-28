@@ -14,7 +14,10 @@ VENV="${ROOT}/lab/.venv"
 REQ="${ROOT}/scripts/requirements-user-identity.txt"
 if [[ ! -x "${VENV}/bin/python" ]]; then
   echo "Creating lab/.venv for ADR 0008 user-identity sidecar (dilithium-py)…"
-  python3 -m venv "${VENV}"
+  if ! python3 -m venv "${VENV}"; then
+    echo "python3 -m venv failed. Use Python 3.11 or newer. On Debian/Ubuntu install python3-venv for that Python." >&2
+    exit 1
+  fi
   "${VENV}/bin/pip" install -q -r "${REQ}"
 fi
 export CONCRETE_USER_IDENTITY_PYTHON="${CONCRETE_USER_IDENTITY_PYTHON:-${VENV}/bin/python}"

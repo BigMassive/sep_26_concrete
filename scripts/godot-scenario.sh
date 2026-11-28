@@ -71,6 +71,9 @@ if ! curl -sf "http://127.0.0.1:${HTTP_PORT}/health" >/dev/null; then
   exit 1
 fi
 
+export GODOT_BIN
+"${ROOT}/scripts/ensure-godot-import.sh"
+
 mkdir -p "${RUN}"
 {
   echo "--- launch $(date -Is) parent $$ scenario ${NAME}"
@@ -133,7 +136,14 @@ if [[ "${GODOT_SCENARIO_WINDOW:-}" == "1" ]]; then
 fi
 
 args=(--headless "${args[@]}")
-stdbuf -oL -eL "${GODOT_BIN}" "${args[@]}" 2>&1 | tee -a "${LOG}"
+set +e
+timeout --kill-after=10s 180s stdbuf -oL -eL "${GODOT_BIN}" "${args[@]}" 2>&1 | tee -a "${LOG}"
 rc="${PIPESTATUS[0]}"
+set -e
+if [[ "${rc}" -eq 124 ]]; then
+  echo "Headless scenario produced no result after 180s. Tail of ${LOG}:" >&2
+  tail -n 40 "${LOG}" >&2
+  exit 124
+fi
 write_pins
 exit "${rc}"

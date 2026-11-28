@@ -19,7 +19,7 @@ Helen → Alice CoT: [docs/11](../docs/11-helen-alice-cot-beats.md), coded per [
 ./scripts/node-up.sh     # empty CoT, no auto-King
 ```
 
-Requires **Godot 4.7** on the host (`GODOT_BIN` overrides path). This machine uses `/home/stuart/Downloads/godot` (4.7.2). A fresh `session-up` is a blank Circle of Trust. Replay of genesis fails unless **Zeroise**.
+Requires **Godot 4.7** on the host (`godot` or `godot4` on `PATH`, or `GODOT_BIN`). A fresh checkout has no `godot/.godot/` class cache; `./scripts/godot-up.sh` and `./scripts/godot-scenario.sh` import the project once before launching. A fresh `session-up` is a blank Circle of Trust. Replay of genesis fails unless **Zeroise**.
 
 ## Godot AI (editor connection)
 

@@ -19,6 +19,9 @@ if [[ -z "${GODOT_BIN}" ]]; then
   fi
 fi
 
+export GODOT_BIN
+"${ROOT}/scripts/ensure-godot-import.sh"
+
 echo "Using ${GODOT_BIN}"
 echo "Project: ${ROOT}/godot"
 if [[ "${GODOT_EDITOR:-}" == "1" ]]; then

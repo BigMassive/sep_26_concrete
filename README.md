@@ -16,6 +16,18 @@ This repository is the working prototype: the docs and ADRs, a Docker lab (priva
 - Vision / socio-technical site: [BigMassive/CONCRETE](https://github.com/BigMassive/CONCRETE) · [site](https://BigMassive.github.io/CONCRETE)
 - Prior lab prototype (archive, not a migration base): `mar_26_concrete` (self-hosted)
 
+## Fresh machine
+
+`./scripts/session-up.sh` runs `./scripts/check-host.sh` before it wipes anything. Install these, then open a new shell so group membership applies:
+
+- **Docker Engine** and the **Compose v2 plugin**. `docker compose version` must work without `sudo`. If the socket says permission denied: `sudo usermod -aG docker "$USER"`, then open a new shell.
+- **Elixir 1.17** or newer (this repo is developed on 1.18 / OTP 27).
+- **Godot 4.7** on `PATH` as `godot` or `godot4`, or set `GODOT_BIN`.
+- **Python 3.11** or newer, with `python3 -m venv` working (`python3-venv` on Debian/Ubuntu). `./scripts/node-up.sh` creates `lab/.venv` and installs `scripts/requirements-user-identity.txt`.
+- `openssl`, `curl`, and `git`.
+
+The first Godot launch imports the project when `godot/.godot/` is missing. That directory is gitignored.
+
 ## Run it
 
 A test starts clean and ends wiped. The steps are in [lab/README.md](lab/README.md#test-sessions--start-clean-then-wipe).

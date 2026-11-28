@@ -22,6 +22,7 @@ for arg in "$@"; do
   esac
 done
 
+"${ROOT}/scripts/check-host.sh"
 "${ROOT}/scripts/session-down.sh"
 
 echo "Starting a clean lab session…"
