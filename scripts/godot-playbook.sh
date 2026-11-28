@@ -14,9 +14,7 @@ PORT="${CONCRETE_GODOT_PORT:-24567}"
 PLAYBOOK="${1:-first-login}"
 
 if [[ -z "${GODOT_BIN}" ]]; then
-  if [[ -x /home/stuart/Downloads/godot ]]; then
-    GODOT_BIN=/home/stuart/Downloads/godot
-  elif command -v godot4 >/dev/null 2>&1; then
+  if command -v godot4 >/dev/null 2>&1; then
     GODOT_BIN=$(command -v godot4)
   elif command -v godot >/dev/null 2>&1; then
     GODOT_BIN=$(command -v godot)
